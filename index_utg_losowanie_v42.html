@@ -1,0 +1,2180 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UTG 2026 — Prototype</title>
+<style>
+:root{--bg:#f4f5f7;--card:#fff;--text:#17181b;--muted:#737780;--line:#e5e7eb;--accent:#111827;--green:#16a34a;--yellow:#ca8a04;--red:#dc2626}
+*{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--text)}
+.app{max-width:1100px;margin:auto;min-height:100vh}.top{background:#111827;color:#fff;padding:22px 22px 18px;position:sticky;top:0;z-index:5}
+.top h1{margin:0;padding:0 130px;font-size:25px;text-align:center;line-height:1.2}.top p{margin:4px 0 0;color:#aeb5c1;font-size:13px;text-align:center}.identity-link{color:#aeb5c1;text-decoration:none;font-weight:600;cursor:pointer}.identity-link:hover{color:#fff;text-decoration:underline}
+.nav{display:flex;gap:8px;overflow:auto;margin-top:17px}.nav button{border:0;background:#273142;color:#dbe1ea;padding:10px 14px;border-radius:10px;white-space:nowrap;font-weight:600;cursor:pointer}.nav button.active{background:#fff;color:#111827}
+main{padding:20px}.page{display:none}.page.active{display:block}
+.hero{display:flex;justify-content:space-between;gap:16px;align-items:flex-end;margin-bottom:18px}.hero h2{margin:0;font-size:23px}.hero p{margin:5px 0 0;color:var(--muted);font-size:14px}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.card{background:var(--card);border:1px solid var(--line);border-radius:15px;padding:17px;box-shadow:0 1px 2px #00000008}.card h3{margin:0 0 12px;font-size:16px}.stat{font-size:28px;font-weight:800}.muted{color:var(--muted);font-size:13px}
+.cards2{display:grid;grid-template-columns:1.2fr .8fr;gap:14px}.table-wrap{overflow:auto}.table{width:100%;border-collapse:collapse;font-size:14px}.table th,.table td{padding:10px 8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}.table th{font-size:12px;color:var(--muted);text-transform:uppercase}.pos{font-weight:800;width:35px}.me{font-weight:800}.pill{display:inline-block;padding:4px 8px;border-radius:999px;font-size:11px;font-weight:700;background:#eef0f3}.win{color:var(--green)}.loss{color:var(--red)}.pending{color:var(--yellow)}
+.matches{display:flex;flex-direction:column;gap:8px}.match{display:flex;align-items:center;justify-content:space-between;border:1px solid var(--line);border-radius:11px;padding:11px 12px;background:#fff}.teams{display:flex;gap:7px;align-items:center}.score{font-weight:900;min-width:42px;text-align:center}.date{font-size:11px;color:var(--muted)}
+.bracket{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;overflow:auto;padding-bottom:5px}.round h4{font-size:12px;color:var(--muted);text-transform:uppercase;margin:0 0 9px}.game{background:#fff;border:1px solid var(--line);border-radius:10px;margin-bottom:22px;padding:10px;font-size:13px;box-shadow:0 1px 2px #00000008}.game div{padding:5px 0}.game div+div{border-top:1px solid var(--line)}.winner{font-weight:800}.empty{color:#9ca3af}
+.btn{border:0;border-radius:10px;padding:10px 13px;background:#111827;color:#fff;font-weight:700;cursor:pointer}.btn.secondary{background:#eef0f3;color:#111827}
+.form{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.form input{width:70px;padding:10px;border:1px solid var(--line);border-radius:9px;font-size:16px;text-align:center}
+.notice{background:#f9fafb;border:1px dashed #d1d5db;border-radius:12px;padding:12px;color:#5f636d;font-size:13px}
+@media(max-width:750px){.grid,.cards2{grid-template-columns:1fr}.bracket{grid-template-columns:repeat(4,180px)}main{padding:14px}.top{padding:14px 10px 16px}.top h1{font-size:18px;padding:0 8px;text-align:center;width:100%;box-sizing:border-box}.top p{font-size:11px;padding-right:0}.hero{align-items:flex-start;flex-direction:column}}
+
+
+.identity-screen{min-height:calc(100vh - 120px);display:flex;align-items:center;justify-content:center;padding:22px 0}
+.identity-box{width:100%;max-width:760px;text-align:center}.utg-title{font-size:27px;font-weight:850;line-height:1.2;margin:0 0 24px;text-align:center}
+.identity-icon{font-size:38px;margin-bottom:6px}
+.identity-box h2{font-size:28px;margin:0 0 7px}
+.identity-subtitle{color:var(--muted);margin:0 0 24px}
+.players-list{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;justify-items:center}
+.player-card{width:150px;height:150px;border:0;border-radius:18px;background:var(--player-color);color:#fff;padding:14px;font-size:16px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;text-align:center;box-shadow:0 4px 12px #00000018;transition:transform .15s,box-shadow .15s}
+.player-card:hover{transform:translateY(-2px);box-shadow:0 7px 18px #00000025}
+.player-card:active{transform:scale(.97)}
+.player-card span{overflow-wrap:anywhere}
+@media(max-width:760px){.utg-title{font-size:23px}.players-list{grid-template-columns:repeat(3,1fr);gap:12px}.player-card{width:115px;height:115px;font-size:14px;border-radius:15px}}
+@media(max-width:480px){.utg-title{font-size:21px}.identity-screen{align-items:flex-start;padding-top:18px}.identity-box h2{font-size:24px}.players-list{grid-template-columns:repeat(2,1fr);gap:12px}.player-card{width:145px;height:145px;font-size:15px}}
+
+/* ===== PIŁKARZYKI 2026 ===== */
+.football-section{display:flex;flex-direction:column;gap:14px}
+.football-table-card{padding:14px 0 10px;overflow:hidden}
+.football-table-head{padding:0 16px 12px}
+.football-table-head h3{margin:0}
+.table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.football-table{min-width:850px;border-collapse:separate;border-spacing:0;font-size:13px}
+.football-table th{background:#edf0f3;color:#47505c;text-transform:none;font-size:11px;letter-spacing:.02em;font-weight:800;text-align:center;padding:9px 8px;border-bottom:1px solid #dfe3e8;position:sticky;top:0;z-index:1}
+.football-table th:nth-child(2),.football-table td:nth-child(2){text-align:left}
+.football-table td{padding:8px 7px;text-align:center;border-bottom:1px solid #e7e9ed;background:#fff;white-space:nowrap}
+.football-table tbody tr:last-child td{border-bottom:0}
+.football-table .rank-cell{width:48px;font-weight:900;font-size:14px}
+.rank-badge{display:inline-flex;width:29px;height:29px;border-radius:8px;align-items:center;justify-content:center;font-weight:900}
+.rank-top{background:#b9e7c6;color:#176b36}
+.rank-qf{background:#ffd59a;color:#8a4c00}
+.rank-po{background:#bcdcff;color:#14518d}
+.rank-out{background:#e2e5e9;color:#68707a}
+.player-name-cell{font-weight:800!important;min-width:190px}
+.player-name-tag{display:inline-flex;align-items:center;gap:7px;padding:7px 10px;border-radius:8px;color:#fff;min-width:175px;justify-content:flex-start}
+.player-dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.72);flex:none}
+.num-strong{font-weight:800}
+.goal-diff-positive{font-weight:800}
+.goal-diff-negative{font-weight:800}
+.form-icons{display:flex;justify-content:center;gap:5px}
+.form-dot{width:18px;height:18px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;box-shadow:inset 0 1px 2px rgba(255,255,255,.35),0 1px 2px rgba(0,0,0,.12);font-size:9px;color:#fff;font-weight:900}
+.form-win{background:linear-gradient(145deg,#8de2b1,#35b979)}
+.form-loss{background:linear-gradient(145deg,#f47b88,#db3148)}
+.form-empty{background:#d9dde3;color:#8a919b}
+.legend{display:flex;flex-wrap:wrap;gap:7px 12px;margin-top:10px;padding:0 16px 4px;color:#66707c;font-size:11px}
+.legend-item{display:inline-flex;align-items:center;gap:5px}
+.legend-box{width:12px;height:12px;border-radius:4px;display:inline-block}
+.schedule-card{padding:0}
+.schedule-header{padding:16px 16px 10px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.schedule-header h3{margin:0}
+.schedule-header p{margin:4px 0 0}
+.round-block{padding:0 12px 12px}
+.round-title{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#69727d;font-weight:900;padding:8px 4px}
+.match-row{display:flex;align-items:center;justify-content:space-between;gap:10px;border:1px solid #e3e6eb;border-radius:12px;padding:11px 12px;background:#fff;margin-bottom:7px;cursor:pointer;transition:.15s}
+.match-row:hover{border-color:#c7ced8;transform:translateY(-1px)}
+.match-row:active{transform:translateY(0)}
+.match-teams{display:flex;align-items:center;gap:7px;min-width:0;flex:1}
+.team-chip{display:inline-flex;align-items:center;gap:5px;font-weight:800;min-width:0}
+.team-chip span:last-child{overflow:hidden;text-overflow:ellipsis}
+.team-dot{width:9px;height:9px;border-radius:50%;flex:none}
+.vs{color:#9aa1aa;font-size:11px;font-weight:700}
+.match-score{font-size:17px;font-weight:900;min-width:55px;text-align:center}
+.match-score.empty-score{color:#a4abb4}
+.edit-hint{font-size:10px;color:#8b929c;min-width:52px;text-align:right}
+.schedule-save{font-size:12px;color:#2d7d4b;font-weight:700;padding:0 16px 12px;min-height:18px}
+.bracket-card{overflow:hidden}
+.bracket-wrap{overflow-x:auto;padding:2px 14px 18px;-webkit-overflow-scrolling:touch}
+.football-bracket{display:grid;grid-template-columns:repeat(4,minmax(170px,1fr));gap:22px;min-width:760px;align-items:start}
+.bracket-round h4{margin:0 0 9px;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:#69727d}
+.bracket-game{background:#fff;border:1px solid #dfe4ea;border-radius:12px;padding:7px;margin-bottom:22px;box-shadow:0 2px 6px rgba(20,30,45,.05);cursor:pointer;transition:.15s}
+.bracket-game:hover{border-color:#b9c2ce;transform:translateY(-1px)}
+.bracket-game.locked{cursor:not-allowed;opacity:.72}
+.bracket-game.locked:hover{transform:none}
+.bracket-game .bracket-lock{font-size:10px;color:#8a929c;padding:4px 8px 2px}
+.bracket-status{display:none}
+.bracket-status.ready{background:#edf8f0;color:#247342}
+.bracket-team{display:flex;align-items:center;justify-content:space-between;gap:7px;padding:8px 8px;border-radius:8px;font-size:12px;font-weight:800}
+.bracket-team strong{font-size:16px;min-width:20px;text-align:right}
+.bracket-player-info{display:flex;flex-direction:column;gap:2px;min-width:0}
+.bracket-seed{font-size:10px;color:#737b86;font-weight:900;line-height:1.1}
+.bracket-player-info span{font-weight:850;overflow:hidden;text-overflow:ellipsis}
+.bracket-team + .bracket-team{margin-top:4px}
+.bracket-team .seed{font-size:10px;color:#7d8590;font-weight:900}
+.bracket-team.placeholder{background:#f1f3f6;color:#9aa1aa}
+.bracket-team.finalist{background:#eef7f1}
+.bracket-team.third{background:#fff6e7}
+.bracket-spacer-sm{height:34px}
+.bracket-spacer-md{height:76px}
+.bracket-spacer-lg{height:118px}
+.bracket-caption{padding:0 16px 14px;color:#7a828c;font-size:11px}
+.score-modal-backdrop{position:fixed;inset:0;background:rgba(12,18,28,.52);display:none;align-items:flex-end;justify-content:center;z-index:50;padding:14px}
+.score-modal-backdrop.open{display:flex}
+.score-modal{width:min(520px,100%);background:#fff;border-radius:18px;padding:18px;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+.score-modal h3{margin:0 0 4px;font-size:19px}
+.score-modal .modal-sub{margin:0 0 16px;color:#707883;font-size:13px}
+.score-pair{display:grid;grid-template-columns:1fr 50px 1fr;align-items:end;gap:10px;margin-bottom:14px}
+.score-side label{display:block;font-size:11px;color:#68717d;font-weight:800;margin-bottom:6px}
+.score-side input{width:100%;padding:12px;border:1px solid #d9dee5;border-radius:10px;font-size:24px;text-align:center;font-weight:900}
+.score-colon{text-align:center;font-size:24px;font-weight:900;padding-bottom:10px}
+.modal-actions{display:flex;gap:8px}
+.modal-actions .btn{flex:1}
+.modal-note{font-size:11px;color:#7a828d;margin-top:10px}
+@media(max-width:750px){
+  .football-table-card{border-radius:14px}
+  .schedule-header{padding:14px 12px 8px}
+  .round-block{padding:0 10px 10px}
+  .match-row{padding:10px}
+  .edit-hint{display:none}
+  .match-teams{font-size:13px}
+  .football-bracket{grid-template-columns:repeat(4,180px)}
+  .score-modal-backdrop{padding:10px}
+}
+
+
+/* ===== LOSOWANIE ===== */
+.draw-section{display:flex;flex-direction:column;gap:14px}.draw-card{background:#fff;border:1px solid var(--line);border-radius:15px;padding:17px}.draw-card h3{margin:0 0 6px}.draw-card p{margin:0 0 14px}.draw-actions{display:flex;gap:8px;flex-wrap:wrap}.draw-player-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.draw-player{border:1px solid #dfe3e8;background:#f8fafc;border-radius:10px;padding:10px;text-align:left;font-weight:700;cursor:pointer}.draw-player.selected{background:#111827;color:#fff;border-color:#111827}.draw-player:disabled{cursor:default}.draw-columns{display:grid;grid-template-columns:1fr 1fr;gap:12px}.drop-list{min-height:90px;border:1px dashed #cbd2da;border-radius:12px;padding:10px;background:#f8fafc}.drop-list.drag-over{background:#eef2f7;border-color:#111827}.drag-player{display:flex;align-items:center;gap:8px;padding:9px 10px;border-radius:9px;background:#fff;border:1px solid #e2e6eb;margin-bottom:7px;cursor:grab;font-weight:700;user-select:none}.drag-player:last-child{margin-bottom:0}.drag-dot{width:9px;height:9px;border-radius:50%;flex:none}.draw-saved{background:#edf8f0;border:1px solid #c9e8d1;color:#236b3a;border-radius:11px;padding:12px;font-weight:700}.draw-lock{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}.draw-result{border:1px solid #e3e6eb;border-radius:11px;padding:10px;margin-top:8px;background:#fafbfc}.draw-result b{font-weight:850}.draw-round{margin-top:7px;color:#555d68;font-size:13px}.draw-wildcard{color:#7b4d00;background:#fff8e8;border-radius:8px;padding:7px;margin-top:5px;font-size:12px}
+@media(max-width:750px){.draw-player-grid{grid-template-columns:repeat(2,1fr)}.draw-columns{grid-template-columns:1fr}.draw-card{padding:14px}}
+
+.draw-dot{width:10px;height:10px;border-radius:50%;display:inline-block;flex:0 0 10px}
+.draw-result-title{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.draw-result-title span{font-size:12px;color:var(--muted)}
+.draw-round-card{margin-top:12px;padding:12px;border:1px solid #e5e7eb;border-radius:14px;background:#f8fafc}
+.draw-round-title{font-weight:800;margin-bottom:9px}
+.draw-pair-list{display:grid;gap:8px}
+.draw-pair-card{display:grid;grid-template-columns:1fr 54px 1fr;align-items:center;gap:8px;padding:10px 12px;background:#fff;border:1px solid #e2e8f0;border-radius:12px;box-shadow:0 1px 2px rgba(15,23,42,.04)}
+.draw-pair-player{display:flex;align-items:center;gap:8px;font-weight:700;min-width:0}
+.draw-pair-player span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.draw-pair-vs{text-align:center;font-size:11px;font-weight:900;color:#64748b}
+.wildcard-pair{border-style:dashed}
+.wildcard-score{justify-content:flex-end;gap:8px}.wildcard-score small{font-size:11px;color:#16a34a}
+.activity-player{display:flex;align-items:center;gap:8px;width:100%;padding:9px 10px;margin-bottom:6px;border:1px solid #e2e8f0;background:#fff;border-radius:10px;text-align:left;font-weight:700;cursor:pointer}
+.activity-player:hover:not(:disabled){transform:translateY(-1px)}
+.activity-player:disabled{cursor:default;opacity:1}
+@media(max-width:600px){.draw-pair-card{grid-template-columns:minmax(0,1fr) 46px minmax(0,1fr);padding:9px}.draw-pair-player{font-size:13px}.draw-pair-vs{font-size:9px}}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+window.addEventListener('error', function () {
+  try {
+    var el = document.getElementById('app-error');
+    if (el) {
+      el.textContent = 'Nie udało się załadować panelu. Spróbuj ponownie.';
+      el.style.display = 'block';
+    }
+  } catch (e) {}
+});
+</script>
+
+<style>
+.draw-player {
+  border: 0 !important;
+  color: #fff !important;
+  font-weight: 800 !important;
+  text-shadow: 0 1px 2px rgba(0,0,0,.25);
+  background: var(--player-color, #64748b) !important;
+}
+.draw-player.selected {
+  background: #0f2747 !important;
+  outline: 3px solid rgba(15,23,42,.18);
+}
+.activity-neutral {
+  background: var(--player-color, #64748b) !important;
+  text-shadow: 0 1px 2px rgba(0,0,0,.25);
+}
+.activity-neutral.selected {
+  background: #0f2747 !important;
+}
+
+.draw-dot { display:none !important; }
+.draw-pair-player { padding: 12px 14px !important; border-radius: 10px !important; }
+</style>
+
+<style>
+.player-opponent-list { display:flex; flex-direction:column; gap:12px; }
+.player-opponent-card { background:#fff; border:1px solid #e5e7eb; border-radius:14px; padding:10px; }
+.player-main { border-radius:10px; padding:11px 14px; font-weight:800; margin-bottom:8px; }
+.rivals { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:8px; }
+.rival-card { border-radius:9px; padding:9px 10px; font-weight:700; }
+.rival-card.wildcard { background:#dcfce7; color:#166534; }
+@media(max-width:600px){
+  .rivals { grid-template-columns:1fr; }
+}
+</style>
+
+<style>
+.activity-confirmed {
+  background:#16a34a !important;
+  border-color:#15803d !important;
+  color:#fff !important;
+}
+.confirmed-panel {
+  border:2px solid #22c55e !important;
+  background:#f0fdf4 !important;
+}
+</style>
+
+<style>
+.draw-player {
+  color:#fff !important;
+  font-weight:800 !important;
+  background:var(--player-color,#64748b) !important;
+  border:0 !important;
+}
+.draw-player.selected,
+.activity-neutral.selected {
+  background:#0f2747 !important;
+  color:#fff !important;
+}
+.activity-neutral {
+  background:var(--player-color,#64748b) !important;
+  color:#fff !important;
+}
+.draw-dot { display:none !important; }
+.player-opponent-list { display:flex; flex-direction:column; gap:12px; }
+.player-opponent-card { background:#fff; border:1px solid #e5e7eb; border-radius:14px; padding:10px; }
+.player-main { border-radius:10px; padding:11px 14px; font-weight:800; margin-bottom:8px; }
+.rivals { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:8px; }
+.rival-card { border-radius:9px; padding:9px 10px; font-weight:700; }
+</style>
+
+<style>
+.organizer-only { display:none; }
+body.utg-organizer .organizer-only { display:inline; }
+</style>
+
+<style>
+#topMeta a.identity-link,
+#topMeta a.edit-draw-link {
+  color:#ffffff !important;
+  font-weight:800;
+  text-decoration:underline;
+  text-decoration-thickness:2px;
+  text-underline-offset:2px;
+}
+#topMeta a.edit-draw-link { color:#fbbf24 !important; }
+#topMeta a:hover { opacity:.9; }
+</style>
+
+<style>
+.rival-card.wildcard {
+  background:#0f2747 !important;
+  color:#fff !important;
+  border:2px dashed rgba(255,255,255,.65);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  min-height:38px;
+  font-weight:800;
+}
+</style>
+
+<style>
+/* ===== v29: compact Piłkarzyki table ===== */
+.football-table-card{padding-left:0;padding-right:0}
+.football-table-head{padding-left:12px;padding-right:12px}
+.football-table{
+  width:100%;
+  min-width:0 !important;
+  table-layout:auto;
+  font-size:12px;
+}
+.football-table th,.football-table td{
+  padding:6px 4px;
+}
+.football-table th{
+  font-size:9px;
+  line-height:1.05;
+  white-space:normal;
+}
+.football-table th:nth-child(1),.football-table td:nth-child(1){width:28px}
+.football-table th:nth-child(2),.football-table td:nth-child(2){
+  width:1%;
+  white-space:nowrap;
+}
+.football-table th:nth-child(n+3),.football-table td:nth-child(n+3){
+  width:auto;
+}
+.player-name-cell{min-width:0 !important}
+.player-name-tag{
+  min-width:0 !important;
+  width:max-content;
+  max-width:100%;
+  padding:6px 7px;
+  gap:5px;
+}
+.player-dot{width:6px;height:6px}
+.form-icons{gap:2px}
+.form-dot{width:15px;height:15px;font-size:8px}
+@media(max-width:600px){
+  .football-table{font-size:10px}
+  .football-table th,.football-table td{padding:5px 2px}
+  .football-table th{font-size:8px}
+  .football-table th:nth-child(1),.football-table td:nth-child(1){width:24px}
+  .player-name-tag{padding:5px 5px;gap:4px}
+  .player-dot{display:none}
+  .form-dot{width:13px;height:13px;font-size:7px}
+}
+
+@media(max-width:600px){
+  .table-scroll{
+    overflow-x:auto !important;
+    -webkit-overflow-scrolling:touch;
+  }
+  .football-table{
+    font-size:10px !important;
+    width:max-content !important;
+    min-width:760px !important;
+    table-layout:auto !important;
+  }
+  .football-table th,.football-table td{
+    padding:4px 2px !important;
+    line-height:1.05 !important;
+  }
+  .football-table th{
+    white-space:nowrap !important;
+    font-size:8px !important;
+  }
+  .football-table .player-name-cell{
+    width:auto !important;
+    min-width:150px !important;
+  }
+  .football-table .player-name-tag{
+    min-width:0 !important;
+    width:max-content !important;
+    max-width:none !important;
+    padding:5px 6px !important;
+    font-size:9px !important;
+    line-height:1.05 !important;
+  }
+  .football-table .form-dot{
+    width:11px !important;
+    height:11px !important;
+    margin:0 1px !important;
+  }
+}
+
+
+@media(max-width:600px){
+  .football-table th,.football-table td{
+    padding-left:1px !important;
+    padding-right:1px !important;
+  }
+  .football-table{
+    min-width:700px !important;
+  }
+}
+
+
+/* Wyróżnienie głównego zawodnika w wynikach losowania */
+.player-opponent-card .player-main{
+  border:2px solid #111827 !important;
+  box-sizing:border-box;
+}
+
+
+/* Boczne menu aplikacji */
+.menu-toggle{
+  position:absolute;left:16px;top:16px;width:38px;height:38px;border:1px solid #374151;
+  border-radius:9px;background:#1f2937;color:#fff;font-size:22px;line-height:1;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;z-index:2;
+}
+.menu-toggle:hover{background:#273142}
+.side-menu-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:30;opacity:0;visibility:hidden;transition:opacity .25s ease,visibility .25s ease}
+.side-menu{position:fixed;left:0;top:0;bottom:0;width:min(330px,86vw);background:#050505;color:#fff;z-index:31;transform:translateX(-100%);transition:transform .28s ease;box-shadow:8px 0 30px rgba(0,0,0,.35);display:flex;flex-direction:column}
+.side-menu.open{transform:translateX(0)}
+.side-menu-overlay.open{opacity:1;visibility:visible}
+.side-menu-head{display:flex;align-items:center;justify-content:space-between;padding:22px 20px;border-bottom:1px solid #262626;font-size:13px;font-weight:800;letter-spacing:.08em}
+.side-menu-head button{border:0;background:transparent;color:#aaa;font-size:30px;line-height:1;cursor:pointer;padding:0 2px}
+.side-menu-head button:hover{color:#fff}
+.side-menu-content{padding:12px}
+.side-menu-item{width:100%;display:flex;align-items:center;gap:13px;border:0;border-radius:10px;background:transparent;color:#fff;padding:14px 13px;text-align:left;font-size:15px;font-weight:700;cursor:pointer}
+.side-menu-item:hover{background:#181818}
+.side-menu-icon{width:25px;text-align:center;font-size:18px}
+.edit-draw-menu{display:none}
+@media(max-width:600px){
+  .menu-toggle{left:12px;top:12px;width:34px;height:34px;font-size:20px}
+}
+
+@media(max-width:600px){
+  .top{
+    position:relative !important;
+    display:flex !important;
+    align-items:center !important;
+    justify-content:center !important;
+    min-height:82px !important;
+    padding:0 12px !important;
+  }
+  .top h1{
+    position:relative !important;
+    width:calc(100% - 72px) !important;
+    margin:0 0 0 72px !important;
+    padding:0 !important;
+    text-align:center !important;
+    line-height:1.15 !important;
+  }
+  #menuToggle{
+    position:absolute !important;
+    left:26px !important;
+    top:50% !important;
+    transform:translateY(-50%) !important;
+    z-index:10 !important;
+  }
+}
+
+
+@media(max-width:600px){
+  .top{
+    position:relative !important;
+    display:flex !important;
+    align-items:center !important;
+    justify-content:center !important;
+    min-height:76px !important;
+    padding:0 10px !important;
+  }
+
+  .top h1{
+    font-size:15px !important;
+    line-height:1.12 !important;
+    width:100% !important;
+    margin:0 !important;
+    padding:0 4px !important;
+    text-align:center !important;
+    box-sizing:border-box !important;
+  }
+
+  /* While choosing identity or preparing the draw, the title is truly centered. */
+  body:not(.draw-saved) .top h1{
+    width:100% !important;
+    margin:0 !important;
+    text-align:center !important;
+  }
+
+  /* After the draw is saved, reserve space for the hamburger. */
+  body.draw-saved .top h1{
+    width:calc(100% - 68px) !important;
+    margin-left:68px !important;
+    margin-right:0 !important;
+    text-align:center !important;
+  }
+
+  #menuToggle{
+    position:absolute !important;
+    left:26px !important;
+    top:50% !important;
+    transform:translateY(-50%) !important;
+    z-index:10 !important;
+  }
+}
+
+
+@media(max-width:600px){
+  /* Nagłówek: tytuł zawsze w jednej linii, a sekcje/nawigacja poniżej. */
+  .top{
+    position:relative !important;
+    display:block !important;
+    padding:14px 10px 12px !important;
+    min-height:0 !important;
+  }
+
+  .top h1{
+    display:block !important;
+    width:100% !important;
+    margin:0 !important;
+    padding:0 !important;
+    font-size:14px !important;
+    line-height:1.2 !important;
+    letter-spacing:-0.2px !important;
+    white-space:nowrap !important;
+    text-align:center !important;
+    box-sizing:border-box !important;
+  }
+
+  /* Przed zapisaniem losowania: tytuł pozostaje idealnie na środku. */
+  body:not(.draw-saved) .top h1{
+    width:100% !important;
+    margin:0 !important;
+  }
+
+  /* Po zapisaniu: tylko wtedy rezerwujemy miejsce na hamburgera. */
+  body.draw-saved .top h1{
+    width:calc(100% - 62px) !important;
+    margin-left:62px !important;
+    margin-right:0 !important;
+    font-size:13.5px !important;
+    text-align:center !important;
+  }
+
+  .nav{
+    display:flex !important;
+    width:100% !important;
+    margin-top:12px !important;
+    gap:7px !important;
+    overflow-x:auto !important;
+    overflow-y:hidden !important;
+    padding:0 1px 2px !important;
+    scrollbar-width:none;
+  }
+  .nav::-webkit-scrollbar{display:none}
+  .nav button{
+    flex:0 0 auto !important;
+    padding:9px 12px !important;
+    font-size:13px !important;
+  }
+
+  #menuToggle{
+    position:absolute !important;
+    left:18px !important;
+    top:14px !important;
+    transform:none !important;
+    z-index:10 !important;
+  }
+}
+
+
+@media(max-width:600px){
+  body:not(.draw-saved) .nav{
+    display:none !important;
+  }
+
+  body.draw-saved .nav{
+    display:flex !important;
+  }
+}
+
+
+body:not(.draw-saved) .nav{
+  display:none !important;
+}
+body.draw-saved .nav{
+  display:flex;
+}
+
+
+@media(max-width:600px){
+  /* Piłkarzyki: Lp. i Imię zostają bez zmian.
+     Od kolumny „Liczba meczów” maksymalnie ściskamy odstępy. */
+  .football-table{
+    width:max-content !important;
+    min-width:0 !important;
+    table-layout:auto !important;
+  }
+
+  .football-table th:nth-child(n+3),
+  .football-table td:nth-child(n+3){
+    padding-left:1px !important;
+    padding-right:1px !important;
+  }
+
+  .football-table th:nth-child(n+3){
+    white-space:nowrap !important;
+  }
+
+  .football-table th:nth-child(3){
+    width:48px !important;
+  }
+  .football-table th:nth-child(4){
+    width:30px !important;
+  }
+  .football-table th:nth-child(5){
+    width:58px !important;
+  }
+  .football-table th:nth-child(6){
+    width:45px !important;
+  }
+  .football-table th:nth-child(7){
+    width:32px !important;
+  }
+  .football-table th:nth-child(8){
+    width:58px !important;
+  }
+
+  .football-table td:nth-child(n+3){
+    white-space:nowrap !important;
+    text-align:center !important;
+  }
+
+  .football-table th:nth-child(3),
+  .football-table th:nth-child(4),
+  .football-table th:nth-child(5),
+  .football-table th:nth-child(6),
+  .football-table th:nth-child(7),
+  .football-table th:nth-child(8){
+    font-size:8px !important;
+    line-height:1.05 !important;
+  }
+}
+
+
+@media(max-width:600px){
+  /* Lekko zwiększamy wysokość granatowego nagłówka, aby hamburger
+     mieścił się w nim w całości i nie zachodził na nawigację. */
+  .top{
+    padding-top:14px !important;
+    padding-bottom:22px !important;
+    min-height:96px !important;
+    box-sizing:border-box !important;
+  }
+
+  #menuToggle{
+    top:14px !important;
+  }
+
+  .nav{
+    margin-top:12px !important;
+  }
+}
+
+
+@media(max-width:600px){
+  .top{
+    position:relative !important;
+    display:block !important;
+    box-sizing:border-box !important;
+    min-height:0 !important;
+    padding:14px 10px 12px !important;
+  }
+
+  .top h1{
+    display:block !important;
+    width:100% !important;
+    margin:0 !important;
+    padding:0 4px !important;
+    font-size:14px !important;
+    line-height:1.2 !important;
+    letter-spacing:-0.2px !important;
+    white-space:nowrap !important;
+    text-align:center !important;
+    box-sizing:border-box !important;
+  }
+
+  /* Before the draw is saved: no hamburger, no reserved left space. */
+  body:not(.draw-saved) .top{
+    padding-top:14px !important;
+    padding-bottom:12px !important;
+  }
+
+  body:not(.draw-saved) .top h1{
+    width:100% !important;
+    margin:0 !important;
+    text-align:center !important;
+  }
+
+  /* After the draw: a dedicated title row leaves the hamburger completely
+     above the navigation, so the button never overlaps the section tabs. */
+  body.draw-saved .top{
+    padding-top:14px !important;
+    padding-bottom:10px !important;
+  }
+
+  body.draw-saved .top h1{
+    width:calc(100% - 62px) !important;
+    margin-left:62px !important;
+    margin-right:0 !important;
+    text-align:center !important;
+    font-size:13.5px !important;
+  }
+
+  #menuToggle{
+    position:absolute !important;
+    left:18px !important;
+    top:14px !important;
+    transform:none !important;
+    z-index:20 !important;
+  }
+
+  body.draw-saved .nav{
+    position:relative !important;
+    z-index:1 !important;
+    margin-top:10px !important;
+  }
+}
+
+</style>
+
+</head>
+<body><div id="app-error" style="display:none;margin:12px;padding:12px;border-radius:10px;background:#fee2e2;color:#991b1b;font-weight:600;"></div>
+<div class="app">
+<header class="top" id="mainHeader">
+  <h1>Urodzinowy Turniej Gier u Esia 2026</h1>
+  <button class="menu-toggle" id="menuToggle" type="button" aria-label="Otwórz menu" onclick="toggleSideMenu()">☰</button>
+  <nav class="nav" id="mainNav">
+    
+    <button class="active" onclick="show('home',this)">🏠 Start</button>
+    <button onclick="show('pilkarzyki',this)">⚽ Piłkarzyki</button>
+    <button onclick="show('fc27',this)">🎮 FC27</button>
+    <button onclick="show('gwint',this)">🃏 Gwint</button>
+    <button onclick="show('dart',this)">🎯 Dart</button>
+    <button onclick="show('profile',this)">👤 Mój profil</button>
+  </nav>
+</header>
+
+<div id="sideMenuOverlay" class="side-menu-overlay" onclick="closeSideMenu()"></div>
+<aside id="sideMenu" class="side-menu" aria-hidden="true">
+  <div class="side-menu-head">
+    <div>MENU</div>
+    <button type="button" onclick="closeSideMenu()" aria-label="Zamknij menu">×</button>
+  </div>
+  <div class="side-menu-content">
+    <button class="side-menu-item" type="button" onclick="changeIdentity();closeSideMenu();">
+      <span class="side-menu-icon">👤</span><span>Zmień tożsamość</span>
+    </button>
+    <button class="side-menu-item edit-draw-menu" id="editDrawMenu" type="button" onclick="show('draw',null);closeSideMenu();">
+      <span class="side-menu-icon">🎲</span><span>Edytuj losowanie</span>
+    </button>
+  </div>
+</aside>
+
+<main>
+
+
+<section id="identity" class="page active">
+  <div class="identity-screen">
+    <div class="identity-box">
+      <div class="identity-icon">👤</div>
+      <h2>Potwierdź swoją tożsamość</h2>
+      <p class="identity-subtitle">Wybierz swoje imię i nazwisko.</p>
+
+      <div class="players-list">
+        <button class="player-card" style="--player-color:#2563eb" onclick="confirmIdentity('Daniel Espinoza')"><span>Daniel Espinoza</span></button>
+        <button class="player-card" style="--player-color:#db2777" onclick="confirmIdentity('Katarzyna Barabasz')"><span>Katarzyna Barabasz</span></button>
+        <button class="player-card" style="--player-color:#7c3aed" onclick="confirmIdentity('Kamila Espinoza')"><span>Kamila Espinoza</span></button>
+        <button class="player-card" style="--player-color:#059669" onclick="confirmIdentity('Kamila Gucwa-Potoczek')"><span>Kamila Gucwa-Potoczek</span></button>
+        <button class="player-card" style="--player-color:#ea580c" onclick="confirmIdentity('Joanna Król')"><span>Joanna Król</span></button>
+        <button class="player-card" style="--player-color:#0891b2" onclick="confirmIdentity('Tomasz Gawlak')"><span>Tomasz Gawlak</span></button>
+        <button class="player-card" style="--player-color:#4f46e5" onclick="confirmIdentity('Mateusz Mida')"><span>Mateusz Mida</span></button>
+        <button class="player-card" style="--player-color:#65a30d" onclick="confirmIdentity('Jacek Hoffman')"><span>Jacek Hoffman</span></button>
+        <button class="player-card" style="--player-color:#c026d3" onclick="confirmIdentity('Dawid Potoczek')"><span>Dawid Potoczek</span></button>
+        <button class="player-card" style="--player-color:#dc2626" onclick="confirmIdentity('Dawid Drogoś')"><span>Dawid Drogoś</span></button>
+        <button class="player-card" style="--player-color:#ca8a04" onclick="confirmIdentity('Wiktoria Obrzut')"><span>Wiktoria Obrzut</span></button>
+        <button class="player-card" style="--player-color:#0f766e" onclick="confirmIdentity('Krystian Świętoń')"><span>Krystian Świętoń</span></button>
+        <button class="player-card" style="--player-color:#64748b" onclick="confirmIdentity('Katarzyna Kluz')"><span>Katarzyna Kluz</span></button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="draw" class="page">
+  <div class="hero">
+    <div><h2>🎲 Losowanie</h2><p id="drawSubtitle">Ustal skład konkurencji i wylosuj przeciwników.</p></div>
+  </div>
+  <div id="drawApp"></div>
+</section>
+
+<section id="home" class="page">
+  <div class="hero"><div><h2 id="welcomeTitle">Witaj 👋</h2></div></div>
+  <div class="grid">
+    <div class="card"><h3>⚽ Piłkarzyki</h3><div class="stat">#2</div><div class="muted">miejsce w lidze • 9 pkt</div></div>
+    <div class="card"><h3>🎮 FC27</h3><div class="stat">#4</div><div class="muted">miejsce w lidze • 7 pkt</div></div>
+    <div class="card"><h3>🃏 Gwint</h3><div class="stat">#3</div><div class="muted">miejsce w tabeli • 6 pkt</div></div>
+  </div>
+  <div style="height:14px"></div>
+  <div class="cards2">
+    <div class="card"><h3>Najbliższe mecze</h3><div class="matches">
+      <div class="match"><div><b>⚽ Piłkarzyki</b><br><span class="muted">Daniel vs Mateusz</span></div><span class="pending">Dzisiaj</span></div>
+      <div class="match"><div><b>🎮 FC27</b><br><span class="muted">Daniel vs Kasia</span></div><span class="pending">Jutro</span></div>
+      <div class="match"><div><b>🃏 Gwint</b><br><span class="muted">Daniel vs Dawid</span></div><span class="pending">15:30</span></div>
+    </div></div>
+    <div class="card"><h3>Porównaj z innym graczem</h3>
+      <p class="muted" style="margin-top:0">Sprawdź swoje wyniki i pozycje w poszczególnych konkurencjach na tle wybranego uczestnika.</p>
+      <button class="btn secondary" onclick="alert('Moduł porównania przygotujemy w kolejnym kroku.')">Porównaj</button>
+    </div>
+  </div>
+</section>
+
+<section id="pilkarzyki" class="page">
+  <div class="hero">
+    <div><h2>⚽ Piłkarzyki</h2><p>Liga • terminarz • wyniki • drabinka pucharowa</p></div>
+  </div>
+
+  <div class="football-section">
+    <div class="card football-table-card">
+      <div class="football-table-head">
+        <h3>🏆 Tabela ligowa</h3>
+        <p id="footballRulesSubtitle" class="muted" style="margin:4px 0 0">Skład zostanie ustalony w Losowaniu.</p>
+      </div>
+      <div class="table-scroll">
+        <table class="football-table">
+          <thead>
+            <tr>
+              <th>Lp.</th><th>Imię</th><th>Liczba<br>meczów</th><th>PKT</th><th>Zwycięstwa</th><th>Bilans</th><th>RB</th><th>FORMA</th>
+            </tr>
+          </thead>
+          <tbody id="footballStandings"></tbody>
+        </table>
+      </div>
+      <div id="footballLegend" class="legend"></div>
+    </div>
+
+    <div class="card schedule-card">
+      <div class="schedule-header">
+        <div><h3>📅 Terminarz i wyniki</h3><p class="muted">Kliknij dowolny mecz, aby wpisać lub zmienić wynik.</p></div>
+      </div>
+      <div id="footballSchedule"></div>
+      <div id="footballSaved" class="schedule-save"></div>
+    </div>
+
+    <div class="card bracket-card">
+      <div class="schedule-header">
+        <div><h3>🏆 Drabinka pucharowa</h3><p class="muted">Układ zgodny z zasadami turnieju.</p></div>
+      </div>
+<div class="bracket-wrap">
+        <div id="footballBracket" class="football-bracket"></div>
+      </div>
+      <div class="bracket-caption">1. i 2. miejsce po lidze otrzymują bezpośredni awans do półfinałów. 3.–4. grają ćwierćfinały, 5.–8. play-offy.</div>
+    </div>
+  </div>
+</section>
+
+<section id="fc27" class="page">
+  <div class="hero"><div><h2>🎮 FC27</h2><p>Liga • terminarz • baraż • półfinały • finał</p></div></div>
+  <div class="card"><h3>Tabela ligowa</h3><div class="table-wrap"><table class="table"><thead><tr><th>#</th><th>Zawodnik</th><th>M</th><th>W</th><th>R</th><th>P</th><th>BZ</th><th>BS</th><th>Bil.</th><th>PKT</th></tr></thead><tbody>
+    <tr><td class="pos">1</td><td>Mateusz</td><td>4</td><td>3</td><td>1</td><td>0</td><td>15</td><td>7</td><td>+8</td><td><b>10</b></td></tr>
+    <tr><td class="pos">2</td><td>Kasia</td><td>4</td><td>3</td><td>0</td><td>1</td><td>13</td><td>8</td><td>+5</td><td><b>9</b></td></tr>
+    <tr><td class="pos">3</td><td class="me">Daniel</td><td>4</td><td>2</td><td>1</td><td>1</td><td>11</td><td>9</td><td>+2</td><td><b>7</b></td></tr>
+    <tr><td class="pos">4</td><td>Dawid</td><td>4</td><td>2</td><td>0</td><td>2</td><td>10</td><td>11</td><td>-1</td><td><b>6</b></td></tr>
+    <tr><td class="pos">5</td><td>Jacek</td><td>4</td><td>1</td><td>1</td><td>2</td><td>8</td><td>11</td><td>-3</td><td><b>4</b></td></tr>
+  </tbody></table></div></div>
+  <div style="height:14px"></div>
+  <div class="cards2"><div class="card"><h3>Terminarz i wyniki</h3><div class="matches">
+    <div class="match"><div>Daniel — Mateusz<br><span class="date">Kolejka 1</span></div><span class="score">2 : 3</span></div>
+    <div class="match"><div>Kasia — Daniel<br><span class="date">Kolejka 2</span></div><span class="score">1 : 1</span></div>
+    <div class="match"><div>Daniel — Dawid<br><span class="date">Kolejka 3</span></div><span class="score">4 : 2</span></div>
+    <div class="match"><div>Jacek — Daniel<br><span class="date">Kolejka 4</span></div><span class="score empty">— : —</span></div>
+  </div></div><div class="card"><h3>Wpisz wynik</h3><p class="muted">Daniel vs Jacek</p><div class="form"><input id="f1" type="number" min="0" value="2"><b>:</b><input id="f2" type="number" min="0" value="1"><button class="btn" onclick="saveResult('FC27')">Zapisz</button></div><div class="notice" style="margin-top:12px">Przy remisie w wymagającym rozstrzygnięcia meczu: dogrywka → karne.</div></div></div>
+  <div style="height:14px"></div>
+  <div class="card"><h3>🏆 Drabinka FC27</h3><div class="bracket">
+    <div class="round"><h4>Baraż</h4><div class="game"><div>4. Dawid</div><div>5. Jacek</div></div></div>
+    <div class="round"><h4>Półfinały — dwumecz</h4><div class="game"><div>1. Mateusz</div><div>Zwycięzca barażu</div><small class="muted">Mecz 1 / Mecz 2 • suma</small></div><div class="game"><div>2. Kasia</div><div>3. Daniel</div><small class="muted">Mecz 1 / Mecz 2 • suma</small></div></div>
+    <div class="round"><h4>Finał</h4><div class="game"><div class="empty">Zwycięzca PF1</div><div class="empty">Zwycięzca PF2</div><small class="muted">jeden mecz</small></div></div>
+  </div></div>
+</section>
+
+<section id="gwint" class="page">
+  <div class="hero"><div><h2>🃏 Gwint</h2><p>Każdy z każdym • do 2 wygranych rund • 3 pkt za zwycięstwo</p></div></div>
+  <div class="cards2"><div class="card"><h3>Tabela</h3><table class="table"><thead><tr><th>#</th><th>Zawodnik</th><th>M</th><th>W</th><th>P</th><th>Rundy</th><th>PKT</th></tr></thead><tbody>
+    <tr><td>1</td><td>Mateusz</td><td>4</td><td>4</td><td>0</td><td>8:2</td><td><b>12</b></td></tr>
+    <tr><td>2</td><td>Kasia</td><td>4</td><td>3</td><td>1</td><td>7:4</td><td><b>9</b></td></tr>
+    <tr><td>3</td><td class="me">Daniel</td><td>4</td><td>2</td><td>2</td><td>6:5</td><td><b>6</b></td></tr>
+    <tr><td>4</td><td>Dawid</td><td>4</td><td>1</td><td>3</td><td>4:7</td><td><b>3</b></td></tr>
+  </tbody></table></div><div class="card"><h3>Terminarz i wyniki</h3><div class="matches">
+    <div class="match"><div>Daniel — Mateusz</div><span class="score">1 : 2</span></div>
+    <div class="match"><div>Kasia — Daniel</div><span class="score">2 : 0</span></div>
+    <div class="match"><div>Daniel — Dawid</div><span class="score">2 : 1</span></div>
+    <div class="match"><div>Daniel — Jacek</div><span class="score empty">— : —</span></div>
+  </div></div></div>
+</section>
+
+<section id="dart" class="page">
+  <div class="hero"><div><h2>🎯 Dart</h2><p>Nowa konkurencja — moduł do skonfigurowania</p></div></div>
+  <div class="card"><div class="notice"><b>Dart jest na razie placeholderem.</b><br>Dodamy format rozgrywek, punktację, terminarz i ewentualną drabinkę, kiedy ustalimy zasady.</div></div>
+</section>
+
+<section id="profile" class="page">
+  <div class="hero"><div><h2>👤 Mój profil</h2><p>Daniel • podgląd wszystkich swoich aktywności</p></div></div>
+  <div class="grid"><div class="card"><h3>Piłkarzyki</h3><div class="stat">3–1</div><div class="muted">9 pkt • bilans +9</div></div><div class="card"><h3>FC27</h3><div class="stat">2–1–1</div><div class="muted">7 pkt • bilans +2</div></div><div class="card"><h3>Gwint</h3><div class="stat">2–2</div><div class="muted">6 pkt • rundy 6:5</div></div></div>
+</section>
+</main>
+</div>
+<script>
+function updateWelcome(){
+  const name = localStorage.getItem('utg_player_name');
+  const welcome = document.getElementById('welcomeTitle');
+  if (welcome) welcome.textContent = name ? 'Witaj, ' + name + '! 👋' : 'Witaj 👋';
+
+  const profileName = document.querySelector('#profile .hero p');
+  if (profileName && name) profileName.textContent = name + ' • podgląd wszystkich swoich aktywności';
+}
+
+
+function updateDrawAccessUI(){
+  const organizer = isOrganizer();
+  const saved = drawIsSaved();
+  const edit = document.getElementById('editDrawMenu');
+  if(edit) edit.style.display = (organizer && saved) ? 'flex' : 'none';
+
+  document.body.classList.toggle('draw-saved', !!saved);
+
+  const menuToggle = document.getElementById('menuToggle');
+  const activePage = document.querySelector('.page.active');
+  const isIdentity = activePage && activePage.id === 'identity';
+  if(menuToggle) menuToggle.style.display = (!isIdentity && saved) ? 'flex' : 'none';
+}
+
+function openSideMenu(){
+  if(!localStorage.getItem('utg_player_name')) return;
+  const menu=document.getElementById('sideMenu');
+  const overlay=document.getElementById('sideMenuOverlay');
+  if(menu) { menu.classList.add('open'); menu.setAttribute('aria-hidden','false'); }
+  if(overlay) overlay.classList.add('open');
+}
+function closeSideMenu(){
+  const menu=document.getElementById('sideMenu');
+  const overlay=document.getElementById('sideMenuOverlay');
+  if(menu) { menu.classList.remove('open'); menu.setAttribute('aria-hidden','true'); }
+  if(overlay) overlay.classList.remove('open');
+}
+function toggleSideMenu(){
+  const menu=document.getElementById('sideMenu');
+  if(menu && menu.classList.contains('open')) closeSideMenu(); else openSideMenu();
+}
+
+function show(id,btn){
+  if(id==='draw' && drawIsSaved() && !isOrganizer()){
+    id='home';
+    btn=null;
+  }
+  document.querySelectorAll('.page').forEach(x => x.classList.remove('active'));
+  const page = document.getElementById(id);
+  if (page) page.classList.add('active');
+
+  const nav = document.getElementById('mainNav');
+  if (nav) {
+    // Menu jest ukryte WYŁĄCZNIE na ekranie wyboru tożsamości.
+    // Po potwierdzeniu wraca jako normalne menu aplikacji.
+    nav.style.display = id === 'identity' ? 'none' : 'flex';
+    const menuToggle = document.getElementById('menuToggle');
+    // Hamburger menu appears only after the draw is saved.
+    // During identity selection and draw preparation it stays hidden.
+    if (menuToggle) menuToggle.style.display = (id !== 'identity' && drawIsSaved()) ? 'flex' : 'none';
+    if (id === 'identity') closeSideMenu();
+    nav.querySelectorAll('button').forEach(x => x.classList.remove('active'));
+
+    if (id !== 'identity') {
+      if (btn) {
+        btn.classList.add('active');
+      } else if (id === 'home') {
+        nav.querySelector('button').classList.add('active');
+      }
+    }
+  }
+
+  updateWelcome();
+  updateDrawAccessUI();
+  if(id==='draw') renderDraw();
+  if(['pilkarzyki','fc27','gwint','dart'].includes(id)) renderDynamicCompetitionParticipants();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+const SUPABASE_URL = 'https://ecrjqhulucejsbtwapxh.supabase.co';
+const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_848h7ZmtmGiniH_k9Ibe-g_4H139oCq';
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+
+
+const FOOTBALL_PLAYERS = [
+{name:'Daniel Espinoza',color:'#2563eb'},
+{name:'Katarzyna Barabasz',color:'#db2777'},
+{name:'Kamila Espinoza',color:'#7c3aed'},
+{name:'Kamila Gucwa-Potoczek',color:'#059669'},
+{name:'Joanna Król',color:'#ea580c'},
+{name:'Tomasz Gawlak',color:'#0891b2'},
+{name:'Mateusz Mida',color:'#4f46e5'},
+{name:'Jacek Hoffman',color:'#65a30d'},
+{name:'Dawid Potoczek',color:'#c026d3'},
+{name:'Dawid Drogoś',color:'#dc2626'},
+{name:'Wiktoria Obrzut',color:'#ca8a04'},
+{name:'Krystian Świętoń',color:'#0f766e'},
+{name:'Katarzyna Kluz',color:'#64748b'}
+];
+
+const FOOTBALL_MATCHES_DEFAULT = [
+{id:1,round:1,p1:5,p2:2,score1:null,score2:null},
+{id:2,round:1,p1:11,p2:7,score1:null,score2:null},
+{id:3,round:1,p1:4,p2:3,score1:null,score2:null},
+{id:4,round:1,p1:6,p2:1,score1:null,score2:null},
+{id:5,round:1,p1:10,p2:8,score1:null,score2:null},
+{id:6,round:1,p1:9,p2:0,score1:null,score2:null},
+{id:7,round:2,p1:6,p2:9,score1:null,score2:null},
+{id:8,round:2,p1:7,p2:0,score1:null,score2:null},
+{id:9,round:2,p1:10,p2:4,score1:null,score2:null},
+{id:10,round:2,p1:8,p2:1,score1:null,score2:null},
+{id:11,round:2,p1:2,p2:12,score1:null,score2:null},
+{id:12,round:2,p1:5,p2:11,score1:null,score2:null},
+{id:13,round:3,p1:11,p2:8,score1:null,score2:null},
+{id:14,round:3,p1:6,p2:7,score1:null,score2:null},
+{id:15,round:3,p1:10,p2:1,score1:null,score2:null},
+{id:16,round:3,p1:0,p2:5,score1:null,score2:null},
+{id:17,round:3,p1:12,p2:3,score1:null,score2:null},
+{id:18,round:3,p1:4,p2:9,score1:null,score2:null}
+];
+
+let footballMatches = JSON.parse(localStorage.getItem('utg_pilkarzyki_matches') || 'null');
+const footballScheduleSignature = FOOTBALL_MATCHES_DEFAULT.map(m => `${m.round}-${m.p1}-${m.p2}`).join('|');
+const savedFootballScheduleSignature = Array.isArray(footballMatches)
+  ? footballMatches.map(m => `${m.round}-${m.p1}-${m.p2}`).join('|')
+  : '';
+
+if (!Array.isArray(footballMatches) ||
+    footballMatches.length !== FOOTBALL_MATCHES_DEFAULT.length ||
+    footballMatches.some(m => m.p1 >= FOOTBALL_PLAYERS.length || m.p2 >= FOOTBALL_PLAYERS.length) ||
+    footballMatches.some(m => m.round > 3) ||
+    savedFootballScheduleSignature !== footballScheduleSignature) {
+  footballMatches = FOOTBALL_MATCHES_DEFAULT.map(m => ({...m}));
+  localStorage.setItem('utg_pilkarzyki_matches', JSON.stringify(footballMatches));
+}
+
+const FOOTBALL_WILDCARD = {
+  playerId: 2,
+  opponentLabel: 'DZIKA KARTA',
+  scoreFor: 10,
+  scoreAgainst: 0
+};
+
+let activeFootballMatchId = null;
+
+function footballPlayer(id) {
+  return FOOTBALL_PLAYERS[id];
+}
+
+function footballStandings() {
+  const activeIds = selectedIds(safeDrawState()?.football);
+  const sourcePlayers = activeIds.length ? activeIds.map(id => ({...FOOTBALL_PLAYERS[id], id})) : FOOTBALL_PLAYERS.map((p,id)=>({...p,id}));
+  const rowMap = new Map(sourcePlayers.map((p,i)=>[p.id,i]));
+  const rows = sourcePlayers.map(p => ({
+    id:p.id, name:p.name, color:p.color, matches:0, wins:0, losses:0, gf:0, ga:0, points:0, form:[]
+  }));
+
+  footballMatches.forEach(m => {
+    if (m.score1 === null || m.score2 === null) return;
+    const ai = rowMap.get(m.p1), bi = rowMap.get(m.p2);
+    if(ai===undefined || bi===undefined) return;
+    const a = rows[ai], b = rows[bi];
+    a.matches++; b.matches++;
+    a.gf += Number(m.score1); a.ga += Number(m.score2);
+    b.gf += Number(m.score2); b.ga += Number(m.score1);
+    if (m.score1 > m.score2) {
+      a.wins++; a.points += 3; b.losses++;
+      a.form.push('W'); b.form.push('L');
+    } else if (m.score2 > m.score1) {
+      b.wins++; b.points += 3; a.losses++;
+      b.form.push('W'); a.form.push('L');
+    }
+  });
+
+  // Dzika karty wynikają wyłącznie z zapisanego Losowania.
+  const drawWildcards = safeDrawState()?.footballWildcards || [];
+  drawWildcards.forEach(w => {
+    const wildcardIndex = rowMap.get(Number(w.playerId));
+    if(wildcardIndex===undefined) return;
+    const wildcardPlayer = rows[wildcardIndex];
+    wildcardPlayer.matches++;
+    wildcardPlayer.wins++;
+    wildcardPlayer.gf += Number(w.scoreFor ?? 10);
+    wildcardPlayer.ga += Number(w.scoreAgainst ?? 0);
+    wildcardPlayer.points += 3;
+    wildcardPlayer.form.push('W');
+  });
+
+  rows.forEach(r => {
+    r.form = r.form.slice(-3);
+    r.diff = r.gf-r.ga;
+  });
+
+  rows.sort((a,b) =>
+    b.points-a.points ||
+    b.diff-a.diff ||
+    b.gf-a.gf ||
+    b.wins-a.wins ||
+    a.name.localeCompare(b.name,'pl')
+  );
+  return rows;
+}
+
+function rankClass(rank) {
+  if (rank <= 2) return 'rank-top';
+  if (rank <= 4) return 'rank-qf';
+  if (rank <= 8) return 'rank-po';
+  return 'rank-out';
+}
+
+function renderFootballStandings() {
+  const body = document.getElementById('footballStandings');
+  if (!body) return;
+  const rows = footballStandings();
+
+  body.innerHTML = rows.map((r,idx) => {
+    const rank = idx+1;
+    const form = [0,1,2].map(i => {
+      const v = r.form[i];
+      return v === 'W'
+        ? '<span class="form-dot form-win">W</span>'
+        : v === 'L'
+          ? '<span class="form-dot form-loss">L</span>'
+          : '<span class="form-dot form-empty">•</span>';
+    }).join('');
+    const diffClass = r.diff >= 0 ? 'goal-diff-positive' : 'goal-diff-negative';
+    return `<tr>
+      <td class="rank-cell"><span class="rank-badge ${rankClass(rank)}">${rank}</span></td>
+      <td class="player-name-cell"><span class="player-name-tag" style="background:${r.color}"><i class="player-dot"></i>${escapeHtml(r.name)}</span></td>
+      <td class="num-strong">${r.matches}</td>
+      <td><b>${r.points}</b></td>
+      <td class="num-strong">${r.wins}</td>
+      <td>${r.gf}:${r.ga}</td>
+      <td class="${diffClass}">${r.diff > 0 ? '+' : ''}${r.diff}</td>
+      <td><div class="form-icons">${form}</div></td>
+    </tr>`;
+  }).join('');
+}
+
+function renderFootballSchedule() {
+  const box = document.getElementById('footballSchedule');
+  if (!box) return;
+  let out = '<div class="round-block">';
+
+  footballMatches.forEach(m => {
+      const p1=footballPlayer(m.p1), p2=footballPlayer(m.p2);
+      const score = m.score1===null ? '<span class="match-score empty-score">— : —</span>' :
+        `<span class="match-score">${m.score1} : ${m.score2}</span>`;
+      out += `<div class="match-row" onclick="openFootballModal(${m.id})">
+        <div class="match-teams">
+          <span class="team-chip"><i class="team-dot" style="background:${p1.color}"></i><span>${escapeHtml(p1.name)}</span></span>
+          <span class="vs">vs</span>
+          <span class="team-chip"><i class="team-dot" style="background:${p2.color}"></i><span>${escapeHtml(p2.name)}</span></span>
+        </div>
+        ${score}
+        <span class="edit-hint">✎ edytuj</span>
+      </div>`;
+    });
+
+  // Dzika karty są pokazane w tym samym ciągłym terminarzu.
+  const wildcards = safeDrawState()?.footballWildcards || [];
+  wildcards.forEach(w => {
+      const wp = footballPlayer(Number(w.playerId));
+      out += `<div class="match-row wildcard-row" style="cursor:default;border-style:dashed">
+        <div class="match-teams">
+          <span class="team-chip"><i class="team-dot" style="background:${wp.color}"></i><span>${escapeHtml(wp.name)}</span></span>
+          <span class="vs">•</span>
+          <span class="team-chip"><span>🏷️ Dzika karta</span></span>
+        </div>
+        <span class="match-score">10 : 0</span>
+      </div>`;
+  });
+
+  out += '</div>';
+  box.innerHTML = out;
+}
+
+
+const KNOCKOUT_DEFAULT = {
+  po1:null, po2:null, qf1:null, qf2:null, sf1:null, sf2:null, final:null, third:null
+};
+let footballKnockout = JSON.parse(localStorage.getItem('utg_pilkarzyki_knockout') || 'null');
+if (!footballKnockout) {
+  footballKnockout = {...KNOCKOUT_DEFAULT};
+  localStorage.setItem('utg_pilkarzyki_knockout', JSON.stringify(footballKnockout));
+}
+let activeKnockoutKey = null;
+
+function leagueComplete() {
+  return footballMatches.every(m => m.score1 !== null && m.score2 !== null);
+}
+
+function knockoutWinner(key) {
+  const m = footballKnockout[key];
+  if (!m || m.score1 === null || m.score2 === null || !m.p1 || !m.p2) return null;
+  if (m.score1 === m.score2) return null;
+  return m.score1 > m.score2 ? m.p1 : m.p2;
+}
+
+function knockoutLoser(key) {
+  const m = footballKnockout[key];
+  if (!m || m.score1 === null || m.score2 === null || !m.p1 || !m.p2) return null;
+  if (m.score1 === m.score2) return null;
+  return m.score1 > m.score2 ? m.p2 : m.p1;
+}
+
+function currentKnockoutMatch(key) {
+  const rows = footballStandings();
+  const r = n => rows[n-1]?.id ?? null;
+  let p1=null, p2=null;
+
+  if (key === 'po1') { p1=r(8); p2=r(5); }
+  if (key === 'po2') { p1=r(6); p2=r(7); }
+  if (key === 'qf1') { p1=r(4); p2=knockoutWinner('po1'); }
+  if (key === 'qf2') { p1=r(3); p2=knockoutWinner('po2'); }
+  if (key === 'sf1') { p1=r(1); p2=knockoutWinner('qf1'); }
+  if (key === 'sf2') { p1=r(2); p2=knockoutWinner('qf2'); }
+  if (key === 'final') { p1=knockoutWinner('sf1'); p2=knockoutWinner('sf2'); }
+  if (key === 'third') { p1=knockoutLoser('sf1'); p2=knockoutLoser('sf2'); }
+
+  return {p1,p2};
+}
+
+
+function seedLabelFor(key, side) {
+  const labels = {
+    po1: ['8.', '5.'],
+    po2: ['6.', '7.'],
+    qf1: ['4.', 'Zwycięzca PO1'],
+    qf2: ['3.', 'Zwycięzca PO2'],
+    sf1: ['1.', 'Zwycięzca Ćwierćfinału 1'],
+    sf2: ['2.', 'Zwycięzca Ćwierćfinału 2'],
+    final: ['Zwycięzca Półfinału 1', 'Zwycięzca Półfinału 2'],
+    third: ['Przegrany Półfinału 1', 'Przegrany Półfinału 2']
+  };
+  return labels[key]?.[side-1] || '';
+}
+
+function bracketMatchHtml(key, label) {
+  const match = currentKnockoutMatch(key);
+  const saved = footballKnockout[key];
+  const locked = !leagueComplete();
+  const ready = match.p1 !== null && match.p2 !== null;
+
+  const score1 = saved && saved.score1 !== null ? saved.score1 : null;
+  const score2 = saved && saved.score2 !== null ? saved.score2 : null;
+
+  const winnerId = saved && score1 !== null && score2 !== null && score1 !== score2
+    ? (score1 > score2 ? saved.p1 : saved.p2)
+    : null;
+
+  const loserId = saved && score1 !== null && score2 !== null && score1 !== score2
+    ? (score1 > score2 ? saved.p2 : saved.p1)
+    : null;
+
+  const placeholderLabels = {
+    qf1: ['4. miejsce', 'Zwycięzca PO1'],
+    qf2: ['3. miejsce', 'Zwycięzca PO2'],
+    sf1: ['1. miejsce', 'Zwycięzca Ćwierćfinału 1'],
+    sf2: ['2. miejsce', 'Zwycięzca Ćwierćfinału 2'],
+    final: ['Zwycięzca Półfinału 1', 'Zwycięzca Półfinału 2'],
+    third: ['Przegrany Półfinału 1', 'Przegrany Półfinału 2'],
+    po1: ['8. miejsce', '5. miejsce'],
+    po2: ['6. miejsce', '7. miejsce']
+  };
+
+  const team = (player, fallback, score, status, seedLabel='') => {
+    if (!player) {
+      return `<div class="bracket-team placeholder">
+        <small class="bracket-seed">${escapeHtml(fallback)}</small>
+      </div>`;
+    }
+
+    let style = `background:${player.color}18;border-left:4px solid ${player.color}`;
+    if (status === 'winner') {
+      style = 'background:#dff3e4;border-left:4px solid #2e9b50';
+    } else if (status === 'loser') {
+      style = 'background:#e5e7eb;border-left:4px solid #9aa0a8;color:#69717b';
+    }
+
+    return `<div class="bracket-team" style="${style}">
+      <div class="bracket-player-info">
+        <span><small class="bracket-seed">${escapeHtml(seedLabel)}</small> ${escapeHtml(player.name)}</span>
+      </div>
+      <strong>${score ?? ''}</strong>
+    </div>`;
+  };
+
+  const p1 = match.p1 !== null ? footballPlayer(match.p1) : null;
+  const p2 = match.p2 !== null ? footballPlayer(match.p2) : null;
+
+  const fallback1 = placeholderLabels[key]?.[0] || 'Do ustalenia';
+  const fallback2 = placeholderLabels[key]?.[1] || 'Do ustalenia';
+
+  return `<div class="bracket-game ${locked ? 'locked' : ''}" onclick="openKnockoutModal('${key}')">
+    ${team(p1, fallback1, score1, winnerId === match.p1 ? 'winner' : loserId === match.p1 ? 'loser' : '', seedLabelFor(key, 1))}
+    ${team(p2, fallback2, score2, winnerId === match.p2 ? 'winner' : loserId === match.p2 ? 'loser' : '', seedLabelFor(key, 2))}
+    ${locked
+      ? ``
+      : ``}
+  </div>`;
+}
+
+function renderFootballBracket() {
+  const box = document.getElementById('footballBracket');
+  if (!box) return;
+
+  const status = document.getElementById('bracketStatus');
+  const complete = leagueComplete();
+
+  box.innerHTML = `
+    <div class="bracket-round">
+      <h4>Play-offy 1</h4>
+      ${bracketMatchHtml('po1','')}
+      <h4 style="margin-top:18px">Play-offy 2</h4>
+      ${bracketMatchHtml('po2','')}
+    </div>
+
+    <div class="bracket-round">
+      <h4>Ćwierćfinał 1</h4>
+      ${bracketMatchHtml('qf1','')}
+      <h4 style="margin-top:18px">Ćwierćfinał 2</h4>
+      ${bracketMatchHtml('qf2','')}
+    </div>
+
+    <div class="bracket-round">
+      <h4>Półfinał 1</h4>
+      <div class="bracket-spacer-sm"></div>
+      ${bracketMatchHtml('sf1','')}
+      <h4 style="margin-top:18px">Półfinał 2</h4>
+      <div class="bracket-spacer-sm"></div>
+      ${bracketMatchHtml('sf2','')}
+    </div>
+
+    <div class="bracket-round">
+      <h4>Finał</h4>
+      <div class="bracket-spacer-md"></div>
+      ${bracketMatchHtml('final','')}
+      <h4 style="margin-top:30px">Mecz o 3. miejsce</h4>
+      ${bracketMatchHtml('third','')}
+    </div>`;
+}
+
+function openKnockoutModal(key) {
+  if (!leagueComplete()) {
+    alert('Najpierw wszyscy muszą rozegrać swoje mecze ligowe.');
+    return;
+  }
+
+  const match = currentKnockoutMatch(key);
+  if (match.p1 === null || match.p2 === null) {
+    alert('Ta para nie jest jeszcze ustalona — najpierw zakończ poprzednią rundę.');
+    return;
+  }
+
+  activeKnockoutKey = key;
+  const p1=footballPlayer(match.p1), p2=footballPlayer(match.p2);
+  const saved=footballKnockout[key];
+
+  document.getElementById('scoreModalTitle').textContent = p1.name + ' — ' + p2.name;
+  document.getElementById('modalPlayer1Label').textContent = p1.name;
+  document.getElementById('modalPlayer2Label').textContent = p2.name;
+  document.getElementById('modalScore1').value = saved?.score1 ?? '';
+  document.getElementById('modalScore2').value = saved?.score2 ?? '';
+  document.getElementById('modalError').textContent = '';
+  document.getElementById('scoreModalBackdrop').classList.add('open');
+}
+
+
+function clearDownstreamKnockout(key) {
+  const downstream = {
+    po1:['qf1','sf1','final','third'],
+    po2:['qf2','sf2','final','third'],
+    qf1:['sf1','final','third'],
+    qf2:['sf2','final','third'],
+    sf1:['final','third'],
+    sf2:['final','third'],
+    final:[],
+    third:[]
+  };
+  (downstream[key] || []).forEach(k => footballKnockout[k] = null);
+}
+
+function saveKnockoutMatch() {
+  const key = activeKnockoutKey;
+  if (!key) return;
+
+  const match = currentKnockoutMatch(key);
+  if (match.p1 === null || match.p2 === null) return;
+
+  const s1 = Number(document.getElementById('modalScore1').value);
+  const s2 = Number(document.getElementById('modalScore2').value);
+  const error = document.getElementById('modalError');
+
+  const valid = Number.isInteger(s1) && Number.isInteger(s2) &&
+    ((s1 === 10 && s2 >= 0 && s2 < 10) || (s2 === 10 && s1 >= 0 && s1 < 10));
+
+  if (!valid) {
+    error.textContent='Wpisz wynik zgodny z zasadami: jedna strona ma 10, druga 0–9.';
+    return;
+  }
+
+  const p1=footballPlayer(match.p1), p2=footballPlayer(match.p2);
+  if (!window.confirm(`Czy na pewno zapisać wynik ${p1.name} ${s1} : ${s2} ${p2.name}?`)) return;
+
+  clearDownstreamKnockout(key);
+  footballKnockout[key] = {p1:match.p1,p2:match.p2,score1:s1,score2:s2};
+  localStorage.setItem('utg_pilkarzyki_knockout', JSON.stringify(footballKnockout));
+
+  document.getElementById('scoreModalBackdrop').classList.remove('open');
+  activeKnockoutKey=null;
+  document.getElementById('footballSaved').textContent='✓ Wynik pucharowy zapisany.';
+  refreshFootball();
+
+  setTimeout(() => {
+    const el=document.getElementById('footballSaved');
+    if(el) el.textContent='';
+  },2500);
+}
+
+// ===== LOSOWANIE 2026 =====
+const DRAW_STORAGE_KEY = 'utg_2026_draw';
+const DRAW_ORGANIZER = 'Daniel Espinoza';
+const DRAW_PLAYERS = FOOTBALL_PLAYERS.map((p,id) => ({...p,id}));
+
+
+function safeDrawState(){
+  try {
+    var d = (typeof getDraw === 'function') ? getDraw() : null;
+    if (!d || typeof d !== 'object') {
+      return {
+        saved:false, football:[], fc27:[],
+        gwint:[0,5,6,9,8],
+        dart: DRAW_PLAYERS.map(function(p){return p.id;}),
+        footballMatches:[], fc27Matches:[],
+        footballWildcards:[], fc27Wildcards:[],
+        gwintConfirmed:false, dartConfirmed:false
+      };
+    }
+    d.football = Array.isArray(d.football) ? d.football : [];
+    d.fc27 = Array.isArray(d.fc27) ? d.fc27 : [];
+    d.gwint = Array.isArray(d.gwint) ? d.gwint : DRAW_PLAYERS.map(function(p){return p.id;});
+    d.dart = Array.isArray(d.dart) ? d.dart : DRAW_PLAYERS.map(function(p){return p.id;});
+    d.footballMatches = Array.isArray(d.footballMatches) ? d.footballMatches : [];
+    d.fc27Matches = Array.isArray(d.fc27Matches) ? d.fc27Matches : [];
+    d.footballWildcards = Array.isArray(d.footballWildcards) ? d.footballWildcards : [];
+    d.fc27Wildcards = Array.isArray(d.fc27Wildcards) ? d.fc27Wildcards : [];
+    return d;
+  } catch(e) {
+    return null;
+  }
+}
+
+function getDraw(){
+  try { return JSON.parse(localStorage.getItem(DRAW_STORAGE_KEY) || 'null'); } catch(e){ return null; }
+}
+function drawIsSaved(){ return !!safeDrawState()?.saved; }
+
+function shouldShowDrawNav(){
+  return isOrganizer() || !drawIsSaved();
+}
+function isOrganizer() {
+  // confirmIdentity() stores the selected person under utg_player_name.
+  return (localStorage.getItem('utg_player_name') || '').trim() === 'Daniel Espinoza';
+}
+function emptyDraw(){
+  const all = DRAW_PLAYERS.map(p => p.id);
+  return {
+    saved:false,
+    football:[],
+    fc27:[],
+    // Gwint i Dart domyślnie: wszyscy grają.
+    gwint:[0,5,6,9,8],
+    dart:[...all],
+    footballMatches:[],
+    fc27Matches:[],
+    footballWildcards:[],
+    fc27Wildcards:[],
+    gwintConfirmed:false,
+    dartConfirmed:false
+  };
+}
+function normalizeEditableDraw(d){
+  if (!d) return emptyDraw();
+  if (!d.saved) {
+    // Piłkarzyki i FC27 startują puste, ale pełny wybór (np. 13/13) jest prawidłowy.
+    // Gwint/Dart intentionally start with everyone in "Grają".
+    if (!Array.isArray(d.gwint)) d.gwint = DRAW_PLAYERS.map(p=>p.id);
+    if (!Array.isArray(d.dart)) d.dart = DRAW_PLAYERS.map(p=>p.id);
+  }
+  return d;
+}
+
+function selectedIds(list){ return (list || []).map(Number); }
+function shuffle(arr){
+  const a=[...arr];
+  for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
+  return a;
+}
+
+function pairKey(a,b){ return [Math.min(a,b),Math.max(a,b)].join('-'); }
+
+/*
+ * Losowanie ligowe:
+ * - 3 wyniki na uczestnika (przy nieparzystej liczbie osób losowanie może wykorzystać 4 kolejki),
+ * - każdy uczestnik ma dokładnie 3 WYNIKI,
+ * - przy liczbie parzystej: 3 normalne mecze,
+ * - przy liczbie nieparzystej: dokładnie 1 osoba ma jedno BYE,
+ *   które zamieniamy na dziką kartę 10:0.
+ * - osoba z dziką kartą jest ustalana wg priorytetu dyscypliny.
+ * - nigdy nie dajemy 3 dzikich kart jednej osobie.
+ */
+
+function generateLeagueDraw(ids, wildcardPlayerId, opponentsPerPlayer){
+  if(ids.length < 6) return {matches:[], wildcards:[]};
+  const degree=opponentsPerPlayer || 3;
+
+  // A simple graph is used: each edge is one match and each participant
+  // receives the requested number of opponents. For odd N, one wildcard
+  // can reduce the designated player's normal opponent count by one.
+  const target={};
+  ids.forEach(id=>target[id]=degree);
+
+  if(ids.length % 2 === 1){
+    target[wildcardPlayerId]=Math.max(0, degree-1);
+  }
+
+  for(let attempt=0;attempt<5000;attempt++){
+    const rem={...target}, edges=[], used=new Set();
+    let ok=true;
+
+    // Greedy randomized pairing with backtracking-by-retry.
+    while(true){
+      const active=ids.filter(id=>rem[id]>0)
+        .sort((a,b)=>rem[b]-rem[a] || Math.random()-0.5);
+      if(!active.length) break;
+
+      const a=active[0];
+      const candidates=ids.filter(b=>b!==a && rem[b]>0 && !used.has(pairKey(a,b)))
+        .sort(()=>Math.random()-0.5);
+
+      if(candidates.length < rem[a]){ ok=false; break; }
+      for(const b of candidates.slice(0,rem[a])){
+        used.add(pairKey(a,b));
+        edges.push([a,b]);
+        rem[a]--; rem[b]--;
+      }
+      if(rem[a]!==0){ok=false;break;}
+    }
+
+    if(!ok || Object.values(rem).some(v=>v!==0)) continue;
+
+    // Verify degrees exactly.
+    const appearances={}; ids.forEach(id=>appearances[id]=0);
+    edges.forEach(([a,b])=>{appearances[a]++;appearances[b]++;});
+    if(!ids.every(id=>appearances[id]===target[id])) continue;
+
+    // Round display is no longer used, but retain round numbers for
+    // compatibility with the competition module.
+    const matches=edges.map(([a,b],i)=>({
+      id:i+1, round:Math.floor(i/Math.max(1,Math.floor(ids.length/2)))+1,
+      p1:a,p2:b,score1:null,score2:null
+    }));
+
+    const wildcards=(ids.length%2===1)?[{
+      playerId:wildcardPlayerId, scoreFor:10, scoreAgainst:0
+    }]:[];
+
+    return {matches,wildcards};
+  }
+  return {matches:[],wildcards:[]};
+}
+
+function wildcardPriorityFor(key, ids){
+  if(ids.length % 2 === 0) return null;
+  const priorityName = key === 'football' ? 'Kamila Espinoza' : 'Dawid Drogoś';
+  return ids.find(id => DRAW_PLAYERS[id]?.name === priorityName) ?? ids[0];
+}
+function drawParticipantIds(key){ return selectedIds(safeDrawState()?.[key]); }
+function nameById(id){ return DRAW_PLAYERS[id]?.name || ''; }
+function playerById(id){ return DRAW_PLAYERS[id]; }
+function idsToButtons(ids, selected, disabled){
+  return DRAW_PLAYERS.map(p=>`<button class="draw-player ${selected.includes(p.id)?'selected':''}" style="--player-color:${p.color}" ${disabled?'disabled':''} onclick="toggleDrawPlayer('${ids}',${p.id})">${escapeHtml(p.name)}</button>`).join('');
+}
+
+
+function renderActivityLists(key){
+  const d = safeDrawState() || emptyDraw();
+  const playing = selectedIds(d[key]);
+  const notPlaying = DRAW_PLAYERS.map(p=>p.id).filter(id=>!playing.includes(id));
+  const disabled = (drawIsSaved() && !isOrganizer()) || !isOrganizer();
+
+  const make = (id, active) => {
+    const p = playerById(id);
+    return `<button type="button" class="draw-player activity-neutral ${active?'selected':''}" style="--player-color:${p.color}" ${disabled?'disabled':''}
+      onclick="toggleActivityPlayer('${key}',${id})">
+      ${escapeHtml(p.name)}
+    </button>`;
+  };
+
+  return `<div class="activity-columns">
+    <div class="activity-column">
+      <div class="activity-title">Grają <span>${playing.length}</span></div>
+      <div class="draw-player-grid">${playing.map(id=>make(id,true)).join('') || '<div class="muted">Nikt nie gra</div>'}</div>
+    </div>
+    <div class="activity-column">
+      <div class="activity-title">Nie grają <span>${notPlaying.length}</span></div>
+      <div class="draw-player-grid">${notPlaying.map(id=>make(id,false)).join('') || '<div class="muted">Wszyscy grają</div>'}</div>
+    </div>
+  </div>`;
+}
+
+function toggleActivityPlayer(key,id){
+  if(drawIsSaved() || !isOrganizer()) return;
+  const d=safeDrawState() || emptyDraw();
+  const arr=selectedIds(d[key]);
+  const i=arr.indexOf(id);
+  if(i>=0) arr.splice(i,1); else arr.push(id);
+  d[key]=arr;
+  if(key==='gwint' || key==='dart') d[key+'Confirmed']=false;
+  localStorage.setItem(DRAW_STORAGE_KEY,JSON.stringify(d));
+  renderDraw();
+}
+
+function toggleDrawPlayer(key,id){
+  if(!isOrganizer() || drawIsSaved()) return;
+  const d = safeDrawState() || emptyDraw();
+  let arr = Array.isArray(d[key]) ? [...d[key]] : [];
+  const idx = arr.indexOf(Number(id));
+  if(idx >= 0){
+    arr.splice(idx,1);
+  } else {
+    arr.push(Number(id));
+  }
+  d[key] = [...new Set(arr)];
+  if(key === 'football') d.footballMatches = [], d.footballWildcards = [];
+  if(key === 'fc27') d.fc27Matches = [], d.fc27Wildcards = [];
+  localStorage.setItem(DRAW_STORAGE_KEY, JSON.stringify(d));
+  renderDraw();
+}
+function generateDrawFor(key){
+  if(!isOrganizer()){
+    alert('Tylko Daniel Espinoza jako organizator może wykonywać losowanie.');
+    return;
+  }
+  if(drawIsSaved()) return;
+  const d=normalizeEditableDraw(safeDrawState() || emptyDraw());
+  const ids=selectedIds(d[key]);
+  if(ids.length<8){
+    alert(`Na ${key==='football' ? 'Piłkarzyki' : 'FC27'} trzeba wybrać minimum 6 uczestników.`);
+    return;
+  }
+  const priorityName = key==='football' ? 'Kamila Espinoza' : 'Dawid Drogoś';
+  const priorityId = ids.find(id => DRAW_PLAYERS[id]?.name === priorityName) ?? ids[0];
+  const result=generateLeagueDraw(ids,priorityId,key==='football'?3:4);
+  if(!result.matches.length && ids.length>2){ alert('Nie udało się wygenerować poprawnego losowania. Spróbuj ponownie.'); return; }
+  d[key+'Matches']=result.matches;
+  d[key+'Wildcards']=result.wildcards;
+  localStorage.setItem(DRAW_STORAGE_KEY,JSON.stringify(d));
+  renderDraw();
+}
+function confirmActivity(key){
+  if(!isOrganizer()) return;
+  const d=safeDrawState() || emptyDraw();
+  const ids=selectedIds(d[key]);
+  if(ids.length<2){ alert('Wybierz co najmniej 2 uczestników.'); return; }
+  d[key]=ids; d[key+'Confirmed']=true;
+  localStorage.setItem(DRAW_STORAGE_KEY,JSON.stringify(d)); renderDraw();
+}
+function toggleDragPlayer(key,id){ toggleDrawPlayer(key,id); }
+function dragStart(e,key,id){ e.dataTransfer.setData('text/plain',JSON.stringify({key,id})); }
+function allowDrop(e){ e.preventDefault(); e.currentTarget.classList.add('drag-over'); }
+function dragLeave(e){ e.currentTarget.classList.remove('drag-over'); }
+function dropPlayer(e,targetKey){
+  e.preventDefault(); e.currentTarget.classList.remove('drag-over');
+  if(drawIsSaved() && !isOrganizer()) return;
+  try{
+    const {key,id}=JSON.parse(e.dataTransfer.getData('text/plain'));
+    const d=safeDrawState() || emptyDraw();
+    const arr=selectedIds(d[key]);
+    if(targetKey.endsWith('available')) {
+      const i=arr.indexOf(id); if(i>=0) arr.splice(i,1);
+      d[key]=arr;
+    } else {
+      if(!selectedIds(d[targetKey]).includes(id)) d[targetKey]=[...selectedIds(d[targetKey]),id];
+    }
+    localStorage.setItem(DRAW_STORAGE_KEY,JSON.stringify(d)); renderDraw();
+  }catch(err){}
+}
+function saveDraw(){
+  if(!isOrganizer()) return;
+  const d=safeDrawState() || emptyDraw();
+  const required=['football','fc27','gwint','dart'];
+  if(required.some(k=>selectedIds(d[k]).length<2)){ alert('Najpierw potwierdź skład wszystkich konkurencji.'); return; }
+  if(!d.footballMatches?.length || !d.fc27Matches?.length){ alert('Najpierw wylosuj przeciwników w Piłkarzykach i FC27.'); return; }
+  if(!window.confirm('Czy na pewno zapisać losowanie? Po zapisaniu wyniki będą widoczne dla wszystkich uczestników.')) return;
+  d.saved=true; localStorage.setItem(DRAW_STORAGE_KEY,JSON.stringify(d));
+  // Start zbuduje się na podstawie zapisanego składu.
+  applyDrawToCompetitions(); renderDraw();
+  show('home', Array.from(document.querySelectorAll('#mainNav button')).find(function(b){ return (b.textContent||'').includes('Start'); }));
+}
+function editDraw(){
+  if(!isOrganizer()) return;
+  const d=safeDrawState() || emptyDraw(); d.saved=false; localStorage.setItem(DRAW_STORAGE_KEY,JSON.stringify(d)); renderDraw();
+}
+function renderDrawResult(key,label){
+  const d=getDraw() || emptyDraw();
+  const ids=selectedIds(d[key]);
+  const matches=d[key+'Matches']||[];
+  const wild=d[key+'Wildcards']||[];
+
+  if(!matches.length && !d.saved) return '';
+
+  const opponents={};
+  ids.forEach(id=>opponents[id]=[]);
+  matches.forEach(m=>{
+    const a=Number(m.p1), b=Number(m.p2);
+    if(opponents[a]) opponents[a].push({id:b,wild:false});
+    if(opponents[b]) opponents[b].push({id:a,wild:false});
+  });
+
+  // A wildcard is presented as a normal third/fourth rectangle for the
+  // designated participant, so the user can immediately see that it exists.
+  wild.forEach(w=>{
+    const id=Number(w.playerId);
+    if(opponents[id]) opponents[id].push({id:null,wild:true});
+  });
+
+  return `<div class="draw-result">
+    <div class="draw-result-title"><b>${escapeHtml(label)}</b><span>${ids.length} uczestników</span></div>
+    <div class="player-opponent-list">
+      ${ids.map(id=>{
+        const p=playerById(id);
+        const rivals=opponents[id]||[];
+        return `<div class="player-opponent-card">
+          <div class="player-main" style="background:${p.color};color:#fff">${escapeHtml(p.name)}</div>
+          <div class="rivals">
+            ${rivals.map(r=>{
+              if(r.wild){
+                return `<div class="rival-card wildcard">Dzika karta</div>`;
+              }
+              const rp=playerById(r.id);
+              return `<div class="rival-card" style="background:${rp.color};color:#fff">${escapeHtml(rp.name)}</div>`;
+            }).join('')}
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
+  </div>`;
+}
+
+
+
+function applyOrganizerDrawNavVisibility(){
+  if(isOrganizer()) return;
+  if(!drawIsSaved()) return;
+  document.querySelectorAll('[data-nav-draw], .nav-draw').forEach(el=>el.remove());
+  document.querySelectorAll('.nav-item').forEach(el=>{
+    if((el.textContent||'').includes('Losowanie')) el.remove();
+  });
+}
+function renderDraw(){
+  const box=document.getElementById('drawApp'); if(!box) return;
+  const d=normalizeEditableDraw(safeDrawState() || emptyDraw());
+  localStorage.setItem(DRAW_STORAGE_KEY, JSON.stringify(d)); const org=isOrganizer(); const locked=d.saved&&!org;
+  const names=(key)=>selectedIds(d[key]).map(nameById);
+  const status=d.saved ? '<div class="draw-saved">✓ Losowanie zostało zapisane. Wyniki są dostępne dla wszystkich uczestników.</div>' : '<div class="notice">Losowanie jest przygotowywane przez organizatora. Po zapisaniu skład i przeciwnicy zostaną ustalone na stałe dla uczestników.</div>';
+  const footballButtons=idsToButtons('football',selectedIds(d.football),locked);
+  const fcButtons=idsToButtons('fc27',selectedIds(d.fc27),locked);
+  box.innerHTML=`<div class="draw-section">
+    ${status}
+    <div class="draw-card"><h3>⚽ Piłkarzyki</h3><p class="muted">Minimum 8 osób. Każdy otrzymuje 3 przeciwników. Przy nieparzystej liczbie osób osoba priorytetowa otrzymuje dziką kartę jako brakujący wynik.</p><div class="draw-player-grid">${footballButtons}</div><div class="draw-actions" style="margin-top:12px"><button class="btn" onclick="generateDrawFor('football')" ${(!org||locked)?'disabled':''}>🎲 Losuj przeciwników</button></div>${renderDrawResult('football','Piłkarzyki')}</div>
+    <div class="draw-card"><h3>🎮 FC27</h3><p class="muted">Każdy uczestnik otrzymuje 4 przeciwników. Przy nieparzystej liczbie osób występuje dzika karta dla osoby priorytetowej. Pierwszeństwo ma Dawid Drogoś.</p><div class="draw-player-grid">${fcButtons}</div><div class="draw-actions" style="margin-top:12px"><button class="btn" onclick="generateDrawFor('fc27')" ${(!org||locked)?'disabled':''}>🎲 Losuj przeciwników</button></div>${renderDrawResult('fc27','FC27')}</div>
+    <div class="draw-card"><h3>🃏 Gwint</h3><p class="muted">Bez losowania przeciwników — kliknij osobę, aby przenieść ją między „Grają” i „Nie grają”.</p>${renderActivityLists('gwint')}<div class="draw-actions" style="margin-top:12px"><button class="btn ${d.gwintConfirmed?'activity-confirmed':''}" onclick="confirmActivity('gwint')" ${(!org||locked)?'disabled':''}>${d.gwintConfirmed?'✓ Potwierdzono skład':'✓ Potwierdź skład Gwinta'}</button></div><div class="draw-result"><b>Grają:</b> ${names('gwint').map(escapeHtml).join(', ') || 'brak'}</div></div>
+    <div class="draw-card"><h3>🎯 Dart</h3><p class="muted">Bez losowania przeciwników — kliknij osobę, aby przenieść ją między „Grają” i „Nie grają”.</p>${renderActivityLists('dart')}<div class="draw-actions" style="margin-top:12px"><button class="btn ${d.dartConfirmed?'activity-confirmed':''}" onclick="confirmActivity('dart')" ${(!org||locked)?'disabled':''}>${d.dartConfirmed?'✓ Potwierdzono skład':'✓ Potwierdź skład Darta'}</button></div><div class="draw-result"><b>Grają:</b> ${names('dart').map(escapeHtml).join(', ') || 'brak'}</div></div>
+    <div class="draw-card"><div class="draw-lock"><div><h3>🔒 Zapisz losowanie</h3><p class="muted">Po zapisaniu uczestnicy będą mogli tylko oglądać rezultat.</p></div>${d.saved&&org?'<button class="btn secondary" onclick="editDraw()">Edytuj losowanie</button>':(!d.saved&&org?'<button class="btn" onclick="saveDraw()">Zapisz i zamknij losowanie</button>':'')}</div></div>
+  </div>`;
+}
+
+function applyDrawToCompetitions(){
+  const d=safeDrawState(); if(!d?.saved) return;
+  // Piłkarzyki przejmują skład i wylosowane pary. Wyniki wcześniejszego prototypu są czyszczone.
+  const ids=selectedIds(d.football);
+  if(ids.length){
+    const selectedPlayers=ids.map(id=>DRAW_PLAYERS[id]);
+    window.FOOTBALL_ACTIVE_IDS=ids;
+    footballMatches=(d.footballMatches||[]).map((m,i)=>({id:i+1,round:m.round,p1:m.p1,p2:m.p2,score1:m.score1,score2:m.score2}));
+    localStorage.setItem('utg_pilkarzyki_matches',JSON.stringify(footballMatches));
+    localStorage.setItem('utg_pilkarzyki_wildcards',JSON.stringify(d.footballWildcards||[]));
+    footballKnockout={...KNOCKOUT_DEFAULT}; localStorage.setItem('utg_pilkarzyki_knockout',JSON.stringify(footballKnockout));
+    window.FOOTBALL_ACTIVE_PLAYERS=selectedPlayers;
+  }
+  renderDynamicCompetitionParticipants();
+  refreshFootball();
+}
+function renderDynamicCompetitionParticipants(){
+  const d=safeDrawState(); if(!d?.saved) return;
+  const footballIds=selectedIds(d.football);
+  const body=document.getElementById('footballStandings');
+  if(body && footballIds.length && typeof renderFootballStandings==='function') renderFootballStandings();
+  const fs=document.getElementById('footballRulesSubtitle');
+  if(fs) fs.textContent=`${footballIds.length} uczestników • 3 przeciwników na osobę • losowanie zapisane w Losowaniu`;
+  const leg=document.getElementById('footballLegend');
+  if(leg){ const n=footballIds.length; const parts=[]; if(n>=1) parts.push('<span class="legend-item"><i class="legend-box" style="background:#b9e7c6"></i>1–2 półfinał</span>'); if(n>=3) parts.push(`<span class="legend-item"><i class="legend-box" style="background:#ffd59a"></i>3–${Math.min(4,n)} ćwierćfinał</span>`); if(n>=5) parts.push(`<span class="legend-item"><i class="legend-box" style="background:#bcdcff"></i>5–${Math.min(8,n)} play-off</span>`); if(n>=9) parts.push(`<span class="legend-item"><i class="legend-box" style="background:#e2e5e9"></i>9–${n} odpada</span>`); leg.innerHTML=parts.join(''); }
+}
+
+function refreshFootball() {
+  renderFootballStandings();
+  renderFootballSchedule();
+  renderFootballBracket();
+}
+
+function openFootballModal(id) {
+  const match = footballMatches.find(m => m.id === id);
+  if (!match) return;
+  activeFootballMatchId = id;
+  const p1=footballPlayer(match.p1), p2=footballPlayer(match.p2);
+  document.getElementById('scoreModalTitle').textContent = p1.name + ' — ' + p2.name;
+  document.getElementById('modalPlayer1Label').textContent = p1.name;
+  document.getElementById('modalPlayer2Label').textContent = p2.name;
+  document.getElementById('modalScore1').value = match.score1 ?? '';
+  document.getElementById('modalScore2').value = match.score2 ?? '';
+  document.getElementById('modalError').textContent = '';
+  document.getElementById('scoreModalBackdrop').classList.add('open');
+}
+
+function closeFootballModal(event) {
+  if (event && event.target && event.target.id !== 'scoreModalBackdrop') return;
+  document.getElementById('scoreModalBackdrop').classList.remove('open');
+  activeFootballMatchId = null;
+  activeKnockoutKey = null;
+}
+
+function saveFootballMatch() {
+  if (activeKnockoutKey) {
+    saveKnockoutMatch();
+    return;
+  }
+  const m = footballMatches.find(x => x.id === activeFootballMatchId);
+  if (!m) return;
+  const s1 = Number(document.getElementById('modalScore1').value);
+  const s2 = Number(document.getElementById('modalScore2').value);
+  const error = document.getElementById('modalError');
+
+  const valid = (Number.isInteger(s1) && Number.isInteger(s2) &&
+    ((s1 === 10 && s2 >= 0 && s2 < 10) || (s2 === 10 && s1 >= 0 && s1 < 10)));
+
+  if (!valid) {
+    error.textContent = 'Wpisz wynik zgodny z zasadami: jedna strona ma 10, druga 0–9.';
+    return;
+  }
+
+  const p1=footballPlayer(m.p1), p2=footballPlayer(m.p2);
+  const confirmed = window.confirm(`Czy na pewno zapisać wynik ${p1.name} ${s1} : ${s2} ${p2.name}?`);
+  if (!confirmed) return;
+
+  m.score1=s1; m.score2=s2;
+  // Zmiana meczu ligowego może zmienić kolejność całej drabinki.
+  // Wyniki pucharowe są resetowane, aby zawsze odpowiadały aktualnej tabeli.
+  footballKnockout = {...KNOCKOUT_DEFAULT};
+  localStorage.setItem('utg_pilkarzyki_knockout', JSON.stringify(footballKnockout));
+  localStorage.setItem('utg_pilkarzyki_matches', JSON.stringify(footballMatches));
+  document.getElementById('scoreModalBackdrop').classList.remove('open');
+  activeFootballMatchId=null;
+  document.getElementById('footballSaved').textContent='✓ Wynik zapisany.';
+  refreshFootball();
+  setTimeout(() => {
+    const el=document.getElementById('footballSaved');
+    if(el) el.textContent='';
+  }, 2500);
+}
+
+
+function changeIdentity(){
+  // Do not delete the saved identity until a new person is confirmed.
+  // The identity screen will overwrite it after confirmation.
+  show('identity', null);
+}
+
+function confirmIdentity(name){
+  const ok = window.confirm('Czy potwierdzasz, że jesteś: ' + name + '?');
+  if(!ok) return;
+
+  localStorage.setItem('utg_player_name', name);
+  updateWelcome();
+  if (drawIsSaved()) {
+    show('home', Array.from(document.querySelectorAll('#mainNav button')).find(function(b){ return (b.textContent||'').includes('Start'); }));
+  } else {
+    show('draw', null);
+  }
+}
+
+function escapeHtml(value){
+  return String(value).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[ch]));
+}
+
+// Przy ponownym wejściu na stronę zachowujemy wybraną tożsamość.
+// Ekran wyboru pojawia się tylko wtedy, gdy nie ma jeszcze zapisanej osoby.
+document.addEventListener('keydown', (e) => { if(e.key === 'Escape') closeSideMenu(); });
+
+window.addEventListener('DOMContentLoaded', () => {
+  if (drawIsSaved()) applyDrawToCompetitions();
+  refreshFootball();
+  const savedName = localStorage.getItem('utg_player_name');
+  if (savedName) {
+    if (drawIsSaved()) {
+      show('home', Array.from(document.querySelectorAll('#mainNav button')).find(function(b){ return (b.textContent||'').includes('Start'); }));
+    } else {
+      show('draw', null);
+    }
+  } else {
+    show('identity', null);
+  }
+  renderDraw();
+  renderDynamicCompetitionParticipants();
+  updateDrawAccessUI();
+});
+
+
+</script>
+
+<div id="scoreModalBackdrop" class="score-modal-backdrop" onclick="closeFootballModal(event)">
+  <div class="score-modal" onclick="event.stopPropagation()">
+    <h3 id="scoreModalTitle">Wynik meczu</h3>
+    <p class="modal-sub">Każdy uczestnik może wpisać lub zmienić wynik. Mecz kończy się po zdobyciu 10 bramek.</p>
+    <div class="score-pair">
+      <div class="score-side"><label id="modalPlayer1Label">Zawodnik 1</label><input id="modalScore1" type="number" min="0" max="10"></div>
+      <div class="score-colon">:</div>
+      <div class="score-side"><label id="modalPlayer2Label">Zawodnik 2</label><input id="modalScore2" type="number" min="0" max="10"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn secondary" onclick="closeFootballModal()">Anuluj</button>
+      <button class="btn" onclick="saveFootballMatch()">Zapisz wynik</button>
+    </div>
+    <div id="modalError" class="modal-note"></div>
+  </div>
+</div>
+
+
+<script>
+/* ===== UTG 2026 – final draw rules override ===== */
+
+/* Selection: preserve every selected participant, including 13/13. */
+function toggleDrawPlayer(key,id){
+  if(!isOrganizer() || drawIsSaved()) return;
+  const d = getDraw() || emptyDraw();
+  const arr = Array.isArray(d[key]) ? d[key].map(Number) : [];
+  const n = Number(id);
+  const i = arr.indexOf(n);
+  if(i >= 0) arr.splice(i,1);
+  else arr.push(n);
+  d[key] = [...new Set(arr)];
+  if(key==='football'){ d.footballMatches=[]; d.footballWildcards=[]; }
+  if(key==='fc27'){ d.fc27Matches=[]; d.fc27Wildcards=[]; }
+  localStorage.setItem(DRAW_STORAGE_KEY, JSON.stringify(d));
+  renderDraw();
+}
+
+/* Generate a random simple graph where every player gets exactly degree opponents. */
+
+function generateOpponentDraw(ids, degree, wildcardPlayerId){
+  const unique=[...new Set(ids.map(Number))];
+  if(unique.length < 2) return null;
+
+  const target={};
+  unique.forEach(id=>target[id]=Math.min(degree, unique.length-1));
+
+  // With an odd field, the priority player gets one fewer normal opponent;
+  // the wildcard supplies the missing result.
+  if(unique.length % 2 === 1 && wildcardPlayerId != null && target[wildcardPlayerId] > 0){
+    target[wildcardPlayerId]--;
+  }
+
+  // Randomized Havel-Hakimi. Retry several times to avoid unlucky dead ends.
+  for(let attempt=0; attempt<10000; attempt++){
+    const rem={...target};
+    const edges=[];
+    const used=new Set();
+    let failed=false;
+
+    while(true){
+      const active=unique.filter(id=>rem[id]>0);
+      if(!active.length) break;
+
+      active.sort((a,b)=>rem[b]-rem[a] || Math.random()-0.5);
+      const a=active[0];
+      const candidates=unique
+        .filter(b=>b!==a && rem[b]>0 && !used.has(pairKey(a,b)))
+        .sort((x,y)=>rem[y]-rem[x] || Math.random()-0.5);
+
+      if(candidates.length < rem[a]){ failed=true; break; }
+
+      const need=rem[a];
+      for(const b of candidates.slice(0,need)){
+        const pk=pairKey(a,b);
+        used.add(pk);
+        edges.push([a,b]);
+        rem[a]--;
+        rem[b]--;
+      }
+    }
+
+    if(failed || unique.some(id=>rem[id]!==0)) continue;
+
+    const counts={};
+    unique.forEach(id=>counts[id]=0);
+    edges.forEach(([a,b])=>{counts[a]++;counts[b]++;});
+    if(unique.every(id=>counts[id]===target[id])) return edges;
+  }
+  return null;
+}
+
+/* Build matches and one potential wildcard/bye for the priority player. */
+function buildDrawResult(ids, degree, priorityId){
+  const unique=[...new Set(ids.map(Number))];
+  const edges=generateOpponentDraw(unique,degree,priorityId);
+  if(!edges) return null;
+
+  const matches=edges.map(([a,b],i)=>({
+    id:i+1,
+    round:Math.floor(i/Math.max(1,Math.floor(unique.length/2)))+1,
+    p1:a,p2:b,score1:null,score2:null
+  }));
+
+  const wildcards=(unique.length%2===1 && priorityId!=null)
+    ? [{playerId:Number(priorityId),type:'potential-bye'}] : [];
+
+  return {matches,wildcards};
+}
+
+/* FC27: 2–5 = everyone with everyone; 6+ = exactly 4 opponents each. */
+function generateFC27Draw(ids, priorityId){
+  const unique=[...new Set(ids.map(Number))];
+  if(unique.length<2) return {matches:[],wildcards:[]};
+
+  // 2–5 participants: full league, everyone vs everyone.
+  if(unique.length<=5){
+    const matches=[];
+    let n=1;
+    for(let i=0;i<unique.length;i++){
+      for(let j=i+1;j<unique.length;j++){
+        matches.push({id:n++,round:1,p1:unique[i],p2:unique[j],score1:null,score2:null});
+      }
+    }
+    return {matches,wildcards:[]};
+  }
+
+  // 6+ participants: four normal opponents per player.
+  // Odd field: priority player (Dawid Drogoś) gets 3 normal opponents + 1 wildcard.
+  return buildDrawResult(unique,4,priorityId) || {matches:[],wildcards:[]};
+}
+
+function generateFootballDraw(ids, priorityId){
+  const unique=[...new Set(ids.map(Number))];
+  if(unique.length<8) return {matches:[],wildcards:[]};
+
+  // Exactly three normal opponents per player.
+  // Odd field: Kamila Espinoza gets 2 normal opponents + 1 wildcard.
+  return buildDrawResult(unique,3,priorityId) || {matches:[],wildcards:[]};
+}
+
+function generateDrawFor(key){
+  if(!isOrganizer()){
+    alert('Tylko Daniel Espinoza jako organizator może wykonywać losowanie.');
+    return;
+  }
+  if(drawIsSaved()) return;
+
+  const d=getDraw() || emptyDraw();
+  const ids=[...new Set(selectedIds(d[key]))];
+
+  if(key==='football'){
+    if(ids.length<8){
+      alert('Na Piłkarzyki trzeba wybrać minimum 8 uczestników.');
+      return;
+    }
+    const priorityId=ids.find(id=>DRAW_PLAYERS[id]?.name==='Kamila Espinoza');
+    const result=generateFootballDraw(ids,priorityId);
+    if(!result.matches.length){
+      alert('Nie udało się wygenerować poprawnego losowania Piłkarzyków.');
+      return;
+    }
+    d.footballMatches=result.matches;
+    d.footballWildcards=result.wildcards;
+  } else if(key==='fc27'){
+    if(ids.length<2){
+      alert('Na FC27 trzeba wybrać minimum 2 uczestników.');
+      return;
+    }
+    const priorityId=ids.find(id=>DRAW_PLAYERS[id]?.name==='Dawid Drogoś');
+    const result=generateFC27Draw(ids,priorityId);
+    if(!result.matches.length){
+      alert('Nie udało się wygenerować poprawnego losowania FC27.');
+      return;
+    }
+    d.fc27Matches=result.matches;
+    d.fc27Wildcards=result.wildcards;
+  }
+
+  localStorage.setItem(DRAW_STORAGE_KEY,JSON.stringify(d));
+  renderDraw();
+}
+
+/* Participant colors in ALL four discipline selectors:
+   own color by default, navy after clicking. */
+function renderActivityLists(key){
+  const d=getDraw() || emptyDraw();
+  const playing=selectedIds(d[key]);
+  const notPlaying=DRAW_PLAYERS.map(p=>p.id).filter(id=>!playing.includes(id));
+  const disabled=drawIsSaved() || !isOrganizer();
+
+  const make=(id,active)=> {
+    const p=playerById(id);
+    return `<button type="button"
+      class="draw-player activity-neutral ${active?'selected':''}"
+      style="--player-color:${p.color}"
+      ${disabled?'disabled':''}
+      onclick="toggleActivityPlayer('${key}',${id})">${escapeHtml(p.name)}</button>`;
+  };
+
+  return `<div class="activity-columns">
+    <div class="activity-column">
+      <div class="activity-title">Grają <span>${playing.length}</span></div>
+      <div class="draw-player-grid">${playing.map(id=>make(id,true)).join('') || '<div class="muted">Nikt nie gra</div>'}</div>
+    </div>
+    <div class="activity-column">
+      <div class="activity-title">Nie grają <span>${notPlaying.length}</span></div>
+      <div class="draw-player-grid">${notPlaying.map(id=>make(id,false)).join('') || '<div class="muted">Wszyscy grają</div>'}</div>
+    </div>
+  </div>`;
+}
+
+function toggleActivityPlayer(key,id){
+  if(drawIsSaved() || !isOrganizer()) return;
+  const d=getDraw() || emptyDraw();
+  const arr=selectedIds(d[key]);
+  const i=arr.indexOf(Number(id));
+  if(i>=0) arr.splice(i,1); else arr.push(Number(id));
+  d[key]=[...new Set(arr)];
+  if(key==='gwint' || key==='dart') d[key+'Confirmed']=false;
+  localStorage.setItem(DRAW_STORAGE_KEY,JSON.stringify(d));
+  renderDraw();
+}
+
+/* Hide the old round/queue presentation and show person -> opponents. */
+function renderDrawResult(key,label){
+  const d=getDraw() || emptyDraw();
+  const ids=selectedIds(d[key]);
+  const matches=d[key+'Matches']||[];
+  const wild=d[key+'Wildcards']||[];
+
+  if(!matches.length && !d.saved) return '';
+
+  const opponents={};
+  ids.forEach(id=>opponents[id]=[]);
+
+  matches.forEach(m=>{
+    const a=Number(m.p1), b=Number(m.p2);
+    if(opponents[a]) opponents[a].push({id:b,wild:false});
+    if(opponents[b]) opponents[b].push({id:a,wild:false});
+  });
+
+  // For odd Piłkarzyki, the priority player receives a formal third slot:
+  // "Dzika karta". It is display-only here; the existing wildcard/result
+  // logic remains unchanged.
+  wild.forEach(w=>{
+    const pid=Number(w.playerId);
+    if(opponents[pid]) opponents[pid].push({id:null,wild:true});
+  });
+
+  return `<div class="draw-result">
+    <div class="draw-result-title"><b>${escapeHtml(label)}</b><span>${ids.length} uczestników</span></div>
+    <div class="player-opponent-list">
+      ${ids.map(id=>{
+        const p=playerById(id);
+        const rivals=opponents[id]||[];
+        return `<div class="player-opponent-card">
+          <div class="player-main" style="background:${p.color};color:#fff">${escapeHtml(p.name)}</div>
+          <div class="rivals">
+            ${rivals.map(r=>{
+              if(r.wild){
+                return `<div class="rival-card wildcard">Dzika karta</div>`;
+              }
+              const rp=playerById(r.id);
+              return `<div class="rival-card" style="background:${rp.color};color:#fff">${escapeHtml(rp.name)}</div>`;
+            }).join('')}
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
+  </div>`;
+}
+</script>
+
+
+
+
+</body>
+</html>
